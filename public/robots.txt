@@ -1,0 +1,9 @@
+# robots.txt for https://abhisingh.me and https://abhisingh-website.vercel.app
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /admin.html
+Disallow: /api/
+
+Sitemap: https://abhisingh.me/sitemap.xml
+

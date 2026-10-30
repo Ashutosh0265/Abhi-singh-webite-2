@@ -1,0 +1,10 @@
+node_modules
+dist
+.vercel
+*.tmp
+*.log
+E.L.R.x*.html
+ELRx*.html
+clean_store_source.html
+
+.vercel

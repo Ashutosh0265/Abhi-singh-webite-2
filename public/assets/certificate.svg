@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 420" width="100%" height="100%">
+  <rect width="600" height="420" fill="#FFFFFF" stroke="#000000" stroke-width="4"/>
+  <rect x="16" y="16" width="568" height="388" fill="none" stroke="#FFE785" stroke-width="3"/>
+  <rect x="24" y="24" width="552" height="372" fill="none" stroke="#000000" stroke-width="1"/>
+  
+  <!-- Header / Crest -->
+  <circle cx="300" cy="75" r="32" fill="#FFFFFF" stroke="#FF6200" stroke-width="3"/>
+  <polygon points="300,52 308,68 326,71 313,83 316,101 300,92 284,101 287,83 274,71 292,68" fill="#FFE785" stroke="#000000" stroke-width="1.5"/>
+  
+  <text x="300" y="130" font-family="'Lora', serif" font-size="20" font-weight="700" fill="#000000" text-anchor="middle" letter-spacing="1.5">AMERICAN COUNCIL ON EXERCISE</text>
+  <text x="300" y="152" font-family="Arial, sans-serif" font-size="11" font-weight="700" fill="#FF6200" text-anchor="middle" letter-spacing="2">NCCA ACCREDITED CERTIFICATION</text>
+  
+  <line x1="200" y1="168" x2="400" y2="168" stroke="#FFE785" stroke-width="2"/>
+  
+  <text x="300" y="195" font-family="Arial, sans-serif" font-size="12" fill="#000000" text-anchor="middle">This certifies that</text>
+  <text x="300" y="235" font-family="'Lora', serif" font-size="28" font-weight="700" font-style="italic" fill="#000000" text-anchor="middle">Abhimanyu VS</text>
+  <line x1="160" y1="248" x2="440" y2="248" stroke="#000000" stroke-width="1.5"/>
+  
+  <text x="300" y="275" font-family="Arial, sans-serif" font-size="13" font-weight="700" fill="#000000" text-anchor="middle" letter-spacing="0.5">has met all requirements for certification as an</text>
+  <text x="300" y="302" font-family="'Lora', serif" font-size="20" font-weight="700" fill="#FF6200" text-anchor="middle">ACE Certified Personal Trainer</text>
+  
+  <!-- Footer credentials -->
+  <line x1="80" y1="360" x2="220" y2="360" stroke="#000000" stroke-width="1"/>
+  <text x="150" y="375" font-family="Arial, sans-serif" font-size="10" font-weight="700" fill="#000000" text-anchor="middle">CERTIFICATE NO. C239841</text>
+  
+  <rect x="270" y="335" width="60" height="40" fill="#FFE785" stroke="#000000" stroke-width="1.5"/>
+  <text x="300" y="360" font-family="Arial, sans-serif" font-size="9" font-weight="900" fill="#000000" text-anchor="middle">NCCA</text>
+  
+  <line x1="380" y1="360" x2="520" y2="360" stroke="#000000" stroke-width="1"/>
+  <text x="450" y="375" font-family="Arial, sans-serif" font-size="10" font-weight="700" fill="#000000" text-anchor="middle">ACCREDITED PROGRAM</text>
+</svg>
+
