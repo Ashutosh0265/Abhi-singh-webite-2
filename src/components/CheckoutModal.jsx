@@ -68,8 +68,9 @@ export default function CheckoutModal({ product, isOpen, onClose }) {
               <h3
                 style={{
                   fontFamily: 'var(--font-heading)',
-                  fontSize: '1.8rem',
-                  lineHeight: 1.15,
+                  fontSize: 'var(--text-h2)',
+                  lineHeight: 'var(--line-height-heading)',
+                  letterSpacing: 'var(--letter-spacing-h2)',
                   margin: '0.4rem 0',
                 }}
               >
@@ -80,7 +81,7 @@ export default function CheckoutModal({ product, isOpen, onClose }) {
               </p>
             </div>
 
-            <p style={{ fontSize: '0.95rem', lineHeight: 1.6, marginBottom: '1.25rem' }}>
+            <p style={{ fontSize: 'var(--text-body)', lineHeight: 'var(--line-height-body)', marginBottom: '1.25rem' }}>
               {product.description}
             </p>
 
@@ -96,7 +97,7 @@ export default function CheckoutModal({ product, isOpen, onClose }) {
               >
                 <div
                   style={{
-                    fontSize: '0.75rem',
+                    fontSize: 'var(--text-eyebrow)',
                     fontWeight: '800',
                     letterSpacing: '0.08em',
                     textTransform: 'uppercase',
@@ -112,7 +113,8 @@ export default function CheckoutModal({ product, isOpen, onClose }) {
                     <li
                       key={idx}
                       style={{
-                        fontSize: '0.85rem',
+                        fontSize: 'var(--text-body)',
+                        lineHeight: '1.5',
                         padding: '0.25rem 0',
                         display: 'flex',
                         alignItems: 'baseline',

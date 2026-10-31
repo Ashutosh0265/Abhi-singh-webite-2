@@ -103,10 +103,10 @@ export default function CertificateModal({ isOpen, item, onClose }) {
               {currentItem.badge}
             </span>
           </div>
-          <h3 className="modal-title-lora" style={{ fontSize: '1.35rem', margin: '0.2rem 0' }}>
+          <h3 className="modal-title-lora" style={{ margin: '0.2rem 0' }}>
             {currentItem.title}
           </h3>
-          <p className="modal-subtitle-text" style={{ fontSize: '0.85rem' }}>
+          <p className="modal-subtitle-text">
             {currentItem.subtitle} · {currentItem.date}
           </p>
         </div>

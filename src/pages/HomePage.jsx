@@ -84,10 +84,10 @@ export default function HomePage({ onNavigate, onOpenCertificate }) {
 
             {/* Right: Book Content */}
             <div className="book-content reveal-right">
-              <h2>
+              <h1>
                 Train your <span className="hero-highlight">strength, muscle</span><br />
                 &amp; endurance <span className="hero-highlight">every day</span>
-              </h2>
+              </h1>
               <p>
                 I'm an ordinary guy — sales professional, not an athlete — who figured out a simple kettlebell system that fits around a full life. 10 complexes. No programming headaches. No gym required. Just work that compounds.
               </p>
@@ -482,7 +482,7 @@ export default function HomePage({ onNavigate, onOpenCertificate }) {
             onClick={(e) => e.stopPropagation()}
             data-lenis-prevent
             style={{
-              maxWidth: '740px',
+              maxWidth: '720px',
               width: '95%',
               maxHeight: '86vh',
               overflowY: 'auto',
@@ -490,7 +490,7 @@ export default function HomePage({ onNavigate, onOpenCertificate }) {
               background: 'var(--white)',
               border: '2px solid var(--black)',
               boxShadow: '6px 6px 0 var(--yellow)',
-              padding: 'clamp(1.25rem, 3vw, 2.25rem)',
+              padding: '24px',
               position: 'relative',
             }}
           >
@@ -502,14 +502,14 @@ export default function HomePage({ onNavigate, onOpenCertificate }) {
               ✕
             </button>
 
-            <div style={{ marginBottom: '1.25rem' }}>
+            <div style={{ marginBottom: '1rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
                 <span
                   style={{
                     background: 'var(--yellow)',
-                    color: 'var(--black)',
-                    fontSize: '0.72rem',
-                    fontWeight: 800,
+                    color: 'var(--text-color)',
+                    fontSize: 'var(--text-eyebrow)',
+                    fontWeight: 700,
                     letterSpacing: '0.08em',
                     textTransform: 'uppercase',
                     padding: '0.2rem 0.6rem',
@@ -519,18 +519,20 @@ export default function HomePage({ onNavigate, onOpenCertificate }) {
                 >
                   {activeArticle.category || 'Framework'}
                 </span>
-                <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--orange)' }}>
+                <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--orange)' }}>
                   {activeArticle.readTime || activeArticle.read_time || '4 min read'} · {activeArticle.date || activeArticle.published_date || 'October 2026'}
                 </span>
               </div>
 
               <h2
                 style={{
-                  fontFamily: 'var(--font-display)',
-                  fontSize: 'clamp(1.4rem, 2.5vw, 1.95rem)',
-                  lineHeight: 1.25,
-                  margin: '0.5rem 0',
-                  color: 'var(--black)',
+                  fontFamily: 'var(--font-heading)',
+                  fontSize: 'var(--text-h2)',
+                  lineHeight: 'var(--line-height-heading)',
+                  letterSpacing: 'var(--letter-spacing-h2)',
+                  marginTop: 0,
+                  marginBottom: '0.75rem',
+                  color: 'var(--text-color)',
                 }}
               >
                 {activeArticle.title}
@@ -538,7 +540,7 @@ export default function HomePage({ onNavigate, onOpenCertificate }) {
             </div>
 
             {activeArticle.thumbnail && (
-              <div style={{ marginBottom: '1.5rem', border: '2px solid var(--black)', borderRadius: '4px', overflow: 'hidden', maxHeight: '320px' }}>
+              <div style={{ marginBottom: '1.25rem', border: '2px solid var(--black)', borderRadius: '4px', overflow: 'hidden', maxHeight: '300px' }}>
                 <img
                   src={activeArticle.thumbnail.startsWith('/') ? activeArticle.thumbnail : `/${activeArticle.thumbnail}`}
                   alt={activeArticle.title}
@@ -549,7 +551,7 @@ export default function HomePage({ onNavigate, onOpenCertificate }) {
 
             <div
               className="article-reader-content"
-              style={{ fontSize: '0.96rem', lineHeight: '1.7', color: 'var(--black)' }}
+              style={{ fontSize: 'var(--text-body)', lineHeight: 'var(--line-height-body)', color: 'var(--text-color)', maxWidth: 'var(--measure-prose)' }}
               dangerouslySetInnerHTML={{
                 __html: DOMPurify.sanitize(activeArticle.content, {
                   ALLOWED_TAGS: [
@@ -571,7 +573,7 @@ export default function HomePage({ onNavigate, onOpenCertificate }) {
                 alignItems: 'center',
                 gap: '1rem',
                 background: 'var(--yellow)',
-                padding: '1rem',
+                padding: '1.25rem',
                 borderRadius: '4px',
                 border: '2px solid var(--black)',
               }}
@@ -579,13 +581,13 @@ export default function HomePage({ onNavigate, onOpenCertificate }) {
               <img
                 src="/assets/author-photo.png"
                 alt="Abhi Singh"
-                style={{ width: '52px', height: '52px', borderRadius: '4px', border: '2px solid var(--black)', objectFit: 'cover' }}
+                style={{ width: '56px', height: '56px', borderRadius: '4px', border: '2px solid var(--black)', objectFit: 'cover' }}
               />
               <div>
-                <strong style={{ display: 'block', fontSize: '0.98rem', fontFamily: 'var(--font-display)', color: 'var(--black)' }}>
+                <strong style={{ display: 'block', fontSize: '1.1rem', fontFamily: 'var(--font-heading)', color: 'var(--text-color)' }}>
                   Written by Abhi Singh
                 </strong>
-                <span style={{ fontSize: '0.82rem', color: 'var(--black)' }}>
+                <span style={{ fontSize: '0.92rem', color: 'var(--text-color)' }}>
                   ACE Certified Personal Trainer · Creator of Eat. Lift. Run. x
                 </span>
               </div>

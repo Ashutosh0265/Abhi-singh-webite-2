@@ -115,9 +115,10 @@ export default function NewsletterArchivePage({ selectedEditionId, onSelectEditi
 
                 <h1
                   style={{
-                    fontFamily: 'var(--font-display)',
-                    fontSize: 'clamp(1.75rem, 3.5vw, 2.25rem)',
-                    lineHeight: 1.15,
+                    fontFamily: 'var(--font-heading)',
+                    fontSize: 'var(--text-h1)',
+                    lineHeight: 'var(--line-height-display)',
+                    letterSpacing: 'var(--letter-spacing-h1)',
                     marginBottom: '1.5rem',
                     paddingBottom: '0.75rem',
                     borderBottom: '3px solid var(--yellow)',
@@ -138,7 +139,7 @@ export default function NewsletterArchivePage({ selectedEditionId, onSelectEditi
 
                 <div
                   className="edition-body"
-                  style={{ fontSize: '0.98rem', lineHeight: '1.7', color: 'var(--black)' }}
+                  style={{ fontSize: 'var(--text-body)', lineHeight: 'var(--line-height-body)', color: 'var(--text-color)', maxWidth: 'var(--measure-prose)' }}
                   dangerouslySetInnerHTML={{
                     __html: DOMPurify.sanitize(activeEdition.content, {
                       ALLOWED_TAGS: [
@@ -168,10 +169,10 @@ export default function NewsletterArchivePage({ selectedEditionId, onSelectEditi
                     style={{ width: '56px', height: '56px', borderRadius: '4px', border: '2px solid var(--black)' }}
                   />
                   <div>
-                    <strong style={{ display: 'block', fontSize: '1rem', fontFamily: 'var(--font-display)' }}>
+                    <strong style={{ display: 'block', fontSize: '1rem', fontFamily: 'var(--font-heading)', color: 'var(--text-color)' }}>
                       Written by Abhi Singh
                     </strong>
-                    <span style={{ fontSize: '0.85rem', color: 'var(--black)' }}>
+                    <span style={{ fontSize: '0.88rem', color: 'var(--text-color)' }}>
                       ACE Certified Personal Trainer · Creator of Eat. Lift. Run. x
                     </span>
                   </div>
@@ -192,9 +193,12 @@ export default function NewsletterArchivePage({ selectedEditionId, onSelectEditi
               >
                 <h3
                   style={{
-                    fontFamily: 'var(--font-display)',
-                    fontSize: '1.6rem',
+                    fontFamily: 'var(--font-heading)',
+                    fontSize: 'var(--text-h2)',
+                    lineHeight: 'var(--line-height-heading)',
+                    letterSpacing: 'var(--letter-spacing-h2)',
                     marginBottom: '0.5rem',
+                    color: 'var(--text-color)',
                   }}
                 >
                   Get protocols like this in your inbox
@@ -239,7 +243,7 @@ export default function NewsletterArchivePage({ selectedEditionId, onSelectEditi
                   Content Archive &amp; Resources
                 </h1>
               </div>
-              <p style={{ fontSize: '0.95rem', color: 'var(--black)', marginBottom: '2rem', maxWidth: '640px', lineHeight: 1.65 }}>
+              <p style={{ fontSize: 'var(--text-body)', color: 'var(--text-color)', marginBottom: '2rem', maxWidth: 'var(--measure-prose)', lineHeight: 'var(--line-height-body)' }}>
                 Field-tested kettlebell complexes, physical training breakdowns, and nutrition principles. Published directly from my weekly journal.
               </p>
 

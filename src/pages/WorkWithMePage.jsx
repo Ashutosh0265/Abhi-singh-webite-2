@@ -40,7 +40,7 @@ export default function WorkWithMePage() {
               Work with me
             </h2>
           </div>
-          <p className="wwm-header-anim" style={{ fontSize: '0.95rem', color: 'var(--black)', marginBottom: '2.5rem', maxWidth: '640px', lineHeight: 1.65 }}>
+          <p className="wwm-header-anim" style={{ fontSize: 'var(--text-body)', color: 'var(--text-color)', marginBottom: '2.5rem', maxWidth: 'var(--measure-prose)', lineHeight: 'var(--line-height-body)' }}>
             Tell me a little about what you're looking for — I'll get back to you within 24 hours.
           </p>
 

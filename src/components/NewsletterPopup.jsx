@@ -91,18 +91,19 @@ export default function NewsletterPopup() {
             <h3
               style={{
                 fontFamily: 'var(--font-heading)',
-                fontSize: '2rem',
+                fontSize: 'var(--text-h2)',
+                lineHeight: 'var(--line-height-heading)',
+                letterSpacing: 'var(--letter-spacing-h2)',
                 marginBottom: '0.75rem',
-                lineHeight: 1.15,
               }}
             >
               Get the <span style={{ color: 'var(--color-orange)' }}>E.L.R.x</span> Weekly
             </h3>
             <p
               style={{
-                fontSize: '0.98rem',
+                fontSize: 'var(--text-body)',
+                lineHeight: 'var(--line-height-body)',
                 marginBottom: '1.75rem',
-                lineHeight: 1.6,
               }}
             >
               Join 1,000+ everyday lifters. One story from my training journey, one actionable kettlebell complex or nutrition principle you can apply this week.
