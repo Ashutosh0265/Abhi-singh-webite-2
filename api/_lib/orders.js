@@ -73,6 +73,7 @@ export function createOrderRecord(orderData) {
     payment_status: orderData.payment_status || (orderData.product_price === 0 ? 'FREE' : 'PENDING'),
     gateway_payment_reference: orderData.gateway_payment_reference || null,
     delivery_status: orderData.delivery_status || 'NOT_STARTED',
+    email_status: orderData.email_status || (orderData.delivery_status === 'SENT' ? 'EMAIL_SENT' : 'EMAIL_PENDING'),
     delivery_attempt_count: orderData.delivery_attempt_count ?? 0,
     delivery_timestamp: orderData.delivery_timestamp || null,
     delivery_error: orderData.delivery_error || null,

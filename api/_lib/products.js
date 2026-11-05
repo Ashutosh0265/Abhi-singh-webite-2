@@ -153,3 +153,4 @@ export function inrToUsd(priceInr) {
   const usd = Math.max(1, Math.round((priceInr / 83) * 2) / 2);
   return usd.toFixed(2);
 }
+

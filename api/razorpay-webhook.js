@@ -51,8 +51,9 @@ export default async function handler(req, res) {
       const protocol = host.includes('localhost') ? 'http' : 'https';
       const baseUrl = `${protocol}://${host}`;
 
-      const { token } = generateDownloadToken(order.id);
-      const downloadPath = `/api/download-pdf?orderId=${encodeURIComponent(order.id)}&token=${encodeURIComponent(token)}`;
+      const { token } = generateDownloadToken(order.id, { productId: order.product_id, status: 'PAID' });
+      const fileName = order.file_name || (order.pdf_url ? order.pdf_url.split('/').pop() : 'guide.pdf');
+      const downloadPath = `/api/download-pdf?orderId=${encodeURIComponent(order.id)}&token=${encodeURIComponent(token)}&file=${encodeURIComponent(fileName)}`;
       const absoluteDownloadUrl = `${baseUrl}${downloadPath}`;
 
       updateOrderRecord(orderId, {
@@ -66,25 +67,29 @@ export default async function handler(req, res) {
       const { html, text } = buildPaidDeliveryEmail({
         customerName: order.customer_name,
         productName: order.product_name,
+        productDescription: product.description,
         orderId: order.id,
         paymentId,
         amount: order.product_price,
         currency: order.currency || 'INR',
         downloadUrl: absoluteDownloadUrl,
+        fileName,
         hasAttachment: true,
       });
 
-      await sendTransactionalEmail({
+      const emailResult = await sendTransactionalEmail({
         to: order.customer_email,
-        subject: `Your E.L.R.x Purchase Is Ready — ${order.product_name}`,
+        subject: 'Payment Confirmed — Your E.L.R.x PDF Is Ready',
         html,
         text,
         pdfFilePath: order.pdf_url || product.file_url,
         productName: order.product_name,
+        orderId: order.id,
       });
 
       updateOrderRecord(orderId, {
-        delivery_status: 'SENT',
+        delivery_status: emailResult.success ? 'SENT' : 'FAILED',
+        email_status: emailResult.success ? 'EMAIL_SENT' : 'EMAIL_FAILED',
         delivery_timestamp: new Date().toISOString(),
       });
     }
@@ -95,3 +100,4 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Webhook processing exception' });
   }
 }
+

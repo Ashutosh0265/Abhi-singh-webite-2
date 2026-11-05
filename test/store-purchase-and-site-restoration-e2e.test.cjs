@@ -211,6 +211,10 @@ async function runMasterSuite() {
       });
       assert(modalOpen, 'Checkout modal should be open');
 
+      // Verify button label
+      const buttonLabel = await page.$eval('.checkout-submit-btn', el => el.innerText.trim());
+      assert(buttonLabel.includes('Send My Free PDF'), `Free button must be 'Send My Free PDF →', got '${buttonLabel}'`);
+
       // Fill in Name and Email
       await page.type('#checkoutName', 'Priya Sharma');
       await page.type('#checkoutEmail', 'priya.sharma@example.com');
@@ -222,21 +226,21 @@ async function runMasterSuite() {
       // Verify Success Screen
       const successInfo = await page.evaluate(() => {
         const completedWrap = document.querySelector('.checkout-completed-wrap');
-        const title = completedWrap?.querySelector('h3')?.innerText;
-        const downloadBtn = completedWrap?.querySelector('a[download]');
-        const downloadHref = downloadBtn?.getAttribute('href');
+        const title = completedWrap?.querySelector('h3')?.innerText || '';
+        const bodyText = completedWrap?.innerText || '';
+        const downloadBtn = completedWrap?.querySelector('a[download], a.btn-instant-download');
         return {
           isCompleted: !!completedWrap,
           title,
+          bodyText,
           hasDownloadBtn: !!downloadBtn,
-          downloadHref,
         };
       });
 
       assert(successInfo.isCompleted, 'Must transition to completed success screen');
-      assert(successInfo.title.includes('Order Confirmed'), 'Title must confirm order');
-      assert(successInfo.hasDownloadBtn, 'Instant download fallback button must be visible');
-      assert(successInfo.downloadHref && successInfo.downloadHref.includes('.pdf'), 'Download button href must point to valid PDF');
+      assert(successInfo.title.includes('Your PDF is on its way! Please check your inbox.'), 'Title must confirm PDF is on its way to inbox');
+      assert(successInfo.bodyText.includes('spam or promotions folder'), 'Must show secondary instruction about spam/promotions folder');
+      assert.strictEqual(successInfo.hasDownloadBtn, false, 'PDF must NEVER download directly from website (no direct download button)');
 
       // Verify Lead & Order recorded in LocalStorage / DB
       const dbVerification = await page.evaluate(() => {
@@ -288,6 +292,10 @@ async function runMasterSuite() {
       assert(paidProductFound, 'Paid 24 Boring Basics card must be clickable');
       await delay(600);
 
+      // Verify button label
+      const paidButtonLabel = await page.$eval('.checkout-submit-btn', el => el.innerText.trim());
+      assert(paidButtonLabel.includes('Pay & Get My PDF'), `Paid button must be 'Pay & Get My PDF →', got '${paidButtonLabel}'`);
+
       // Fill in customer details
       await page.type('#checkoutName', 'Vikram Malhotra');
       await page.type('#checkoutEmail', 'vikram.m@example.com');
@@ -300,21 +308,19 @@ async function runMasterSuite() {
       const successInfo = await page.evaluate(() => {
         const completedWrap = document.querySelector('.checkout-completed-wrap');
         const text = completedWrap?.innerText || '';
-        const downloadBtn = completedWrap?.querySelector('a[download]');
-        const downloadHref = downloadBtn?.getAttribute('href');
+        const downloadBtn = completedWrap?.querySelector('a[download], a.btn-instant-download');
         return {
           isCompleted: !!completedWrap,
           text,
           hasDownloadBtn: !!downloadBtn,
-          downloadHref
         };
       });
 
       assert(successInfo.isCompleted, 'Paid purchase must reach success confirmation screen');
-      assert(successInfo.text.includes('Order Confirmed'), 'Must state order confirmed');
+      assert(successInfo.text.includes('Payment successful! Your PDF has been sent to your email address.'), 'Must state payment successful and PDF sent to email');
+      assert(successInfo.text.includes('spam or promotions folder'), 'Must state spam or promotions folder note');
       assert(successInfo.text.includes('vikram.m@example.com'), 'Must display customer email');
-      assert(successInfo.hasDownloadBtn, 'Instant Download button must be present for paid purchase');
-      assert(successInfo.downloadHref && successInfo.downloadHref.includes('24-boring-basics-peak-fitness.pdf'), 'Download URL must be the 24 Boring Basics PDF');
+      assert.strictEqual(successInfo.hasDownloadBtn, false, 'PDF must NEVER download directly from website (no direct download button)');
 
       // Verify order saved in DB
       const paidOrderCheck = await page.evaluate(() => {

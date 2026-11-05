@@ -87,48 +87,66 @@ export default async function handler(req, res) {
       const { html, text } = buildFreeDeliveryEmail({
         customerName: cleanName,
         productName: product.name,
+        productDescription: product.description,
         downloadUrl: absoluteDownloadUrl,
+        fileName,
         hasAttachment: true,
       });
 
       let deliveryStatus = 'SENT';
+      let emailStatus = 'EMAIL_SENT';
       let deliveryError = null;
 
       try {
         const emailResult = await sendTransactionalEmail({
           to: cleanEmail,
-          subject: `Your Free E.L.R.x Download — ${product.name}`,
+          subject: `Your Free E.L.R.x PDF — ${product.name}`,
           html,
           text,
           pdfFilePath: product.file_url,
           productName: product.name,
+          orderId: order.id,
         });
 
         if (!emailResult.success) {
           deliveryStatus = 'FAILED';
-          deliveryError = emailResult.warning || 'Email provider rejected';
+          emailStatus = 'EMAIL_FAILED';
+          deliveryError = emailResult.error || 'Email provider rejected delivery';
         }
       } catch (eErr) {
         deliveryStatus = 'FAILED';
+        emailStatus = 'EMAIL_FAILED';
         deliveryError = eErr.message;
       }
 
       updateOrderRecord(order.id, {
         delivery_status: deliveryStatus,
+        email_status: emailStatus,
         delivery_timestamp: new Date().toISOString(),
         delivery_error: deliveryError,
         download_token: token,
       });
+
+      if (deliveryStatus === 'FAILED') {
+        return res.status(502).json({
+          success: false,
+          error: 'We were unable to deliver your PDF to this email. Please check your email address and try again.',
+          orderId: order.id,
+          deliveryStatus: 'FAILED',
+          emailStatus: 'EMAIL_FAILED',
+        });
+      }
 
       return res.status(200).json({
         success: true,
         orderId: order.id,
         productName: product.name,
         paymentStatus: 'FREE',
-        deliveryStatus,
-        message: 'Your PDF is on its way! Check your inbox for your free download.',
+        deliveryStatus: 'SENT',
+        emailStatus: 'EMAIL_SENT',
+        message: 'Your PDF is on its way! Please check your inbox.',
+        secondaryMessage: "If you don't see the email, please check your spam or promotions folder.",
         downloadUrl: downloadPath,
-        directPdfUrl: product.file_url,
       });
     }
 

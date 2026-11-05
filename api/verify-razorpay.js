@@ -63,38 +63,45 @@ export default async function handler(req, res) {
     const { html, text } = buildPaidDeliveryEmail({
       customerName: order.customer_name,
       productName: order.product_name,
+      productDescription: product.description,
       orderId: order.id,
       paymentId: razorpayPaymentId,
       amount: order.product_price,
       currency: order.currency || 'INR',
       downloadUrl: absoluteDownloadUrl,
+      fileName,
       hasAttachment: true,
     });
 
     let deliveryStatus = 'SENT';
+    let emailStatus = 'EMAIL_SENT';
     let deliveryError = null;
 
     try {
       const emailResult = await sendTransactionalEmail({
         to: order.customer_email,
-        subject: `Your E.L.R.x Purchase Is Ready — ${order.product_name}`,
+        subject: 'Payment Confirmed — Your E.L.R.x PDF Is Ready',
         html,
         text,
         pdfFilePath: order.pdf_url || product.file_url,
         productName: order.product_name,
+        orderId: order.id,
       });
 
       if (!emailResult.success) {
         deliveryStatus = 'FAILED';
-        deliveryError = emailResult.warning || 'Email delivery failed';
+        emailStatus = 'EMAIL_FAILED';
+        deliveryError = emailResult.error || 'Email provider rejected delivery';
       }
     } catch (eErr) {
       deliveryStatus = 'FAILED';
+      emailStatus = 'EMAIL_FAILED';
       deliveryError = eErr.message;
     }
 
     updateOrderRecord(orderId, {
       delivery_status: deliveryStatus,
+      email_status: emailStatus,
       delivery_timestamp: new Date().toISOString(),
       delivery_error: deliveryError,
     });
@@ -104,9 +111,9 @@ export default async function handler(req, res) {
       orderId: order.id,
       paymentStatus: 'PAID',
       deliveryStatus,
+      emailStatus,
       downloadUrl: downloadPath,
-      directPdfUrl: order.pdf_url,
-      message: 'Payment verified successfully and PDF deliverable sent.',
+      message: 'Payment successful! Your PDF has been sent to your email address.',
     });
   } catch (err) {
     console.error('[verify-razorpay] Exception:', err);

@@ -53,21 +53,26 @@ export default async function handler(req, res) {
           ? buildFreeDeliveryEmail({
               customerName: order.customer_name,
               productName: order.product_name,
+              productDescription: product.description,
               downloadUrl: absoluteDownloadUrl,
+              fileName,
               hasAttachment: true,
             })
           : buildPaidDeliveryEmail({
               customerName: order.customer_name,
               productName: order.product_name,
+              productDescription: product.description,
               orderId: order.id,
               paymentId: order.gateway_payment_reference || 'admin_retry',
               amount: order.product_price,
               currency: order.currency || 'INR',
               downloadUrl: absoluteDownloadUrl,
+              fileName,
               hasAttachment: true,
             });
 
       let deliveryStatus = 'SENT';
+      let emailStatus = 'EMAIL_SENT';
       let deliveryError = null;
 
       try {
@@ -75,25 +80,29 @@ export default async function handler(req, res) {
           to: order.customer_email,
           subject:
             order.payment_status === 'FREE'
-              ? `Your Free E.L.R.x Download — ${order.product_name}`
-              : `Your E.L.R.x Purchase Is Ready — ${order.product_name}`,
+              ? `Your Free E.L.R.x PDF — ${order.product_name}`
+              : 'Payment Confirmed — Your E.L.R.x PDF Is Ready',
           html: emailPayload.html,
           text: emailPayload.text,
           pdfFilePath: order.pdf_url || product.file_url,
           productName: order.product_name,
+          orderId: order.id,
         });
 
         if (!result.success) {
           deliveryStatus = 'FAILED';
-          deliveryError = result.warning || 'Email provider rejected';
+          emailStatus = 'EMAIL_FAILED';
+          deliveryError = result.error || 'Email provider rejected';
         }
       } catch (err) {
         deliveryStatus = 'FAILED';
+        emailStatus = 'EMAIL_FAILED';
         deliveryError = err.message;
       }
 
       const updated = updateOrderRecord(orderId, {
         delivery_status: deliveryStatus,
+        email_status: emailStatus,
         delivery_attempt_count: (order.delivery_attempt_count || 0) + 1,
         delivery_timestamp: new Date().toISOString(),
         delivery_error: deliveryError,

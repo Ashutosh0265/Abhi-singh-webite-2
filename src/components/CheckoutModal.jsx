@@ -9,6 +9,7 @@ export default function CheckoutModal({ product, isOpen, onClose }) {
   const [name, setName] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('razorpay');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [processingState, setProcessingState] = useState(''); // 'processing_payment', 'confirming_payment', 'sending_pdf'
   const [errorMessage, setErrorMessage] = useState('');
   const [isCompleted, setIsCompleted] = useState(false);
   const [confirmedDetails, setConfirmedDetails] = useState(null);
@@ -196,6 +197,12 @@ export default function CheckoutModal({ product, isOpen, onClose }) {
     // FLOW A: FREE DIGITAL DOWNLOAD OR WAITLIST
     // ─────────────────────────────────────────────────────────────
     if (isFree || isWaitlist || parsedPrice === 0 || backendOrder?.paymentStatus === 'FREE') {
+      if (backendOrder && backendOrder.success === false) {
+        setErrorMessage(backendOrder.error || 'Failed to dispatch email. Please check your email address and try again.');
+        setIsProcessing(false);
+        return;
+      }
+
       await finalizeOrder({
         orderId,
         paymentId: isWaitlist ? 'waitlist_entry' : 'free_instant_access',
@@ -204,8 +211,8 @@ export default function CheckoutModal({ product, isOpen, onClose }) {
         customerName,
         customerEmail: cleanEmail,
         tracking,
-        downloadUrl: backendOrder?.downloadUrl || product.fileUrl || product.file_url,
-        message: 'Your PDF is on its way! Check your inbox for your free download.',
+        downloadUrl: null,
+        message: 'Your PDF is on its way! Please check your inbox.',
       });
       return;
     }
@@ -214,11 +221,13 @@ export default function CheckoutModal({ product, isOpen, onClose }) {
     // FLOW B: PAID DIGITAL PRODUCT VIA RAZORPAY
     // ─────────────────────────────────────────────────────────────
     if (paymentMethod === 'razorpay') {
+      setProcessingState('processing_payment');
       const keyId = backendOrder?.keyId || settings.razorpayKeyId || 'rzp_test_placeholder';
       const rzpOrderId = backendOrder?.razorpayOrderId || `order_${orderId}`;
 
       // Automated test / Puppeteer environment check
       if (typeof navigator !== 'undefined' && (navigator.webdriver || window.__E2E_TEST__)) {
+        setProcessingState('confirming_payment');
         await new Promise((r) => setTimeout(r, 400));
         const testPaymentId = `pay_rzp_test_${Date.now()}`;
         
@@ -236,6 +245,7 @@ export default function CheckoutModal({ product, isOpen, onClose }) {
           });
         } catch {}
 
+        setProcessingState('sending_pdf');
         await finalizeOrder({
           orderId,
           paymentId: testPaymentId,
@@ -244,8 +254,8 @@ export default function CheckoutModal({ product, isOpen, onClose }) {
           customerName,
           customerEmail: cleanEmail,
           tracking,
-          downloadUrl: backendOrder?.downloadUrl || product.fileUrl || product.file_url,
-          message: 'Your purchase is confirmed. Check your inbox for your digital download.',
+          downloadUrl: null,
+          message: 'Payment successful! Your PDF has been sent to your email address.',
         });
         return;
       }
@@ -304,6 +314,7 @@ export default function CheckoutModal({ product, isOpen, onClose }) {
               console.warn('[Checkout] Verify Razorpay notice:', vErr.message);
             }
 
+            setProcessingState('sending_pdf');
             await finalizeOrder({
               orderId,
               paymentId: response.razorpay_payment_id || `pay_${Date.now()}`,
@@ -312,8 +323,8 @@ export default function CheckoutModal({ product, isOpen, onClose }) {
               customerName,
               customerEmail: cleanEmail,
               tracking,
-              downloadUrl: verifiedDownloadUrl,
-              message: 'Your purchase is confirmed. Check your inbox for your digital download.',
+              downloadUrl: null,
+              message: 'Payment successful! Your PDF has been sent to your email address.',
             });
           },
           modal: {
@@ -332,6 +343,7 @@ export default function CheckoutModal({ product, isOpen, onClose }) {
       }
 
       // Verified Test Mode Payment execution
+      setProcessingState('confirming_payment');
       await new Promise((r) => setTimeout(r, 600));
       const testPaymentId = `pay_rzp_test_${Date.now()}`;
       try {
@@ -347,6 +359,7 @@ export default function CheckoutModal({ product, isOpen, onClose }) {
         });
       } catch {}
 
+      setProcessingState('sending_pdf');
       await finalizeOrder({
         orderId,
         paymentId: testPaymentId,
@@ -355,8 +368,8 @@ export default function CheckoutModal({ product, isOpen, onClose }) {
         customerName,
         customerEmail: cleanEmail,
         tracking,
-        downloadUrl: backendOrder?.downloadUrl || product.fileUrl || product.file_url,
-        message: 'Your purchase is confirmed. Check your inbox for your digital download.',
+        downloadUrl: null,
+        message: 'Payment successful! Your PDF has been sent to your email address.',
       });
       return;
     }
@@ -365,7 +378,9 @@ export default function CheckoutModal({ product, isOpen, onClose }) {
     // FLOW C: PAID DIGITAL PRODUCT VIA PAYPAL
     // ─────────────────────────────────────────────────────────────
     if (paymentMethod === 'paypal') {
-      await new Promise((r) => setTimeout(r, 600));
+      setProcessingState('processing_payment');
+      await new Promise((r) => setTimeout(r, 400));
+      setProcessingState('confirming_payment');
       const testPaymentId = `pay_pp_test_${Date.now()}`;
 
       try {
@@ -379,6 +394,7 @@ export default function CheckoutModal({ product, isOpen, onClose }) {
         });
       } catch {}
 
+      setProcessingState('sending_pdf');
       await finalizeOrder({
         orderId,
         paymentId: testPaymentId,
@@ -387,8 +403,8 @@ export default function CheckoutModal({ product, isOpen, onClose }) {
         customerName,
         customerEmail: cleanEmail,
         tracking,
-        downloadUrl: backendOrder?.downloadUrl || product.fileUrl || product.file_url,
-        message: 'Your purchase is confirmed. Check your inbox for your digital download.',
+        downloadUrl: null,
+        message: 'Payment successful! Your PDF has been sent to your email address.',
       });
       return;
     }
@@ -396,6 +412,8 @@ export default function CheckoutModal({ product, isOpen, onClose }) {
 
   const handleReset = () => {
     setIsCompleted(false);
+    setIsProcessing(false);
+    setProcessingState('');
     setEmail('');
     setName('');
     setErrorMessage('');
@@ -577,36 +595,44 @@ export default function CheckoutModal({ product, isOpen, onClose }) {
                     : isPdfMissing
                     ? 'PDF In Preparation'
                     : isProcessing
-                    ? 'Processing order & sending deliverable…'
+                    ? (isFree
+                        ? 'Sending your PDF...'
+                        : processingState === 'confirming_payment'
+                        ? 'Confirming payment...'
+                        : processingState === 'sending_pdf'
+                        ? 'Sending your purchased PDF...'
+                        : 'Processing payment...')
                     : isFree
-                    ? 'Download Free PDF Now →'
+                    ? 'Send My Free PDF →'
                     : isWaitlist
                     ? 'Join Priority Waitlist →'
-                    : `Complete Payment (${product.price}) →`}
+                    : 'Pay & Get My PDF →'}
                 </button>
 
                 <div className="checkout-trust-badge">
-                  <span>🔒 256-bit Secure Encryption · Instant Digital Delivery</span>
+                  <span>🔒 256-bit Secure Encryption · Direct Email Delivery</span>
                 </div>
               </form>
             </div>
           </div>
         ) : (
           <div className="checkout-completed-wrap" style={{ textAlign: 'center', padding: '2.5rem 1.5rem' }}>
-            <div style={{ fontSize: '3rem', marginBottom: '0.75rem' }}>🙌</div>
+            <div style={{ fontSize: '3rem', marginBottom: '0.75rem' }}>📬</div>
             <h3
               style={{
                 fontFamily: 'var(--font-heading)',
                 fontSize: '1.85rem',
-                marginBottom: '0.5rem',
-                lineHeight: 1.2,
+                marginBottom: '0.65rem',
+                lineHeight: 1.25,
                 color: 'var(--color-orange)',
               }}
             >
-              Order Confirmed &amp; Access Granted!
+              {isFree
+                ? 'Your PDF is on its way! Please check your inbox.'
+                : 'Payment successful! Your PDF has been sent to your email address.'}
             </h3>
-            <p style={{ fontSize: 'var(--text-body)', lineHeight: 'var(--line-height-body)', marginBottom: '1.25rem', color: '#374151', maxWidth: '480px', margin: '0 auto 1.25rem auto', fontWeight: 500 }}>
-              We have automatically sent an email to <strong>{confirmedDetails?.customerEmail || email}</strong> containing your verified access details and direct download link.
+            <p style={{ fontSize: 'var(--text-body)', lineHeight: 'var(--line-height-body)', marginBottom: '1.35rem', color: '#4B5563', maxWidth: '480px', margin: '0 auto 1.35rem auto', fontWeight: 500 }}>
+              If you don't see the email, please check your spam or promotions folder.
             </p>
 
             <div
@@ -615,16 +641,17 @@ export default function CheckoutModal({ product, isOpen, onClose }) {
                 padding: '1.25rem',
                 backgroundColor: 'var(--color-yellow)',
                 borderRadius: '6px',
-                marginBottom: '1.5rem',
+                marginBottom: '1.75rem',
                 fontSize: '0.92rem',
                 maxWidth: '460px',
-                margin: '0 auto 1.5rem auto',
+                margin: '0 auto 1.75rem auto',
                 boxShadow: '3px 3px 0 #212121',
                 textAlign: 'left',
                 lineHeight: 1.7,
               }}
             >
               <div><strong>Product:</strong> {product.name}</div>
+              <div><strong>Delivered to:</strong> <strong>{confirmedDetails?.customerEmail || email}</strong></div>
               <div><strong>Order ID:</strong> <code style={{ fontSize: '0.85rem', background: '#fff', padding: '1px 5px', borderRadius: '3px', border: '1px solid #ccc' }}>{confirmedDetails?.orderId}</code></div>
               {confirmedDetails?.paymentId && (
                 <div><strong>Transaction ID:</strong> <code style={{ fontSize: '0.85rem', background: '#fff', padding: '1px 5px', borderRadius: '3px', border: '1px solid #ccc' }}>{confirmedDetails.paymentId}</code></div>
@@ -634,49 +661,24 @@ export default function CheckoutModal({ product, isOpen, onClose }) {
               ) : (
                 <div><strong>Amount:</strong> Free Download</div>
               )}
-              <div style={{ marginTop: '4px' }}>
-                <strong>Delivery Status:</strong>{' '}
-                <span style={{ display: 'inline-block', background: '#10B981', color: '#FFFFFF', padding: '1px 8px', borderRadius: '3px', fontSize: '0.78rem', fontWeight: 800 }}>
-                  ✓ Delivery Sent
+              <div style={{ marginTop: '6px' }}>
+                <strong>Email Delivery Status:</strong>{' '}
+                <span style={{ display: 'inline-block', background: '#10B981', color: '#FFFFFF', padding: '2px 9px', borderRadius: '3px', fontSize: '0.78rem', fontWeight: 800 }}>
+                  ✓ Sent to Email
                 </span>
               </div>
             </div>
-
-            {/* Instant Direct Download Button Fallback */}
-            {confirmedDetails?.downloadUrl && (
-              <div style={{ marginBottom: '1.75rem' }}>
-                <a
-                  href={confirmedDetails.downloadUrl}
-                  download={product.fileName || (product.file_url ? product.file_url.split('/').pop() : 'ELRx-Guide.pdf')}
-                  className="btn-primary-yellow btn-instant-download"
-                  style={{
-                    display: 'inline-block',
-                    padding: '0.85rem 1.8rem',
-                    fontSize: '1rem',
-                    textDecoration: 'none',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                  }}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  📥 Download PDF Now &rarr;
-                </a>
-                <p style={{ fontSize: '0.8rem', color: '#6B7280', marginTop: '0.5rem', margin: '0.5rem 0 0 0' }}>
-                  Click to open or save the PDF directly to your device.
-                </p>
-              </div>
-            )}
 
             <button
               type="button"
               className="btn-card"
               style={{
                 background: 'transparent',
-                color: '#4B5563',
-                borderColor: '#9CA3AF',
-                padding: '0.55rem 1.4rem',
-                fontSize: '0.88rem',
+                color: '#212121',
+                borderColor: '#212121',
+                padding: '0.65rem 1.6rem',
+                fontSize: '0.92rem',
+                fontWeight: 700,
                 cursor: 'pointer',
               }}
               onClick={handleReset}
