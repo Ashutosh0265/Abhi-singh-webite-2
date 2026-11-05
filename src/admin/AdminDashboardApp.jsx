@@ -18,10 +18,14 @@ import {
   getSiteContent,
   updateSiteContent,
   getDashboardMetrics,
+  getOrders,
+  updateOrder,
+  deleteOrder,
   adminLogin,
   adminLogout,
   getAdminSession,
 } from '../services/db';
+import { sendProductDeliveryEmail } from '../services/emailDelivery';
 import { isSupabaseConfigured } from '../services/supabase';
 import {
   getApiSettings,
@@ -64,6 +68,11 @@ export default function AdminDashboardApp() {
   const [postsList, setPostsList] = useState([]);
   const [mediaList, setMediaList] = useState([]);
   const [leadsList, setLeadsList] = useState([]);
+  const [ordersList, setOrdersList] = useState([]);
+  const [orderSearch, setOrderSearch] = useState('');
+  const [orderStatusFilter, setOrderStatusFilter] = useState('all');
+  const [isResendingEmailId, setIsResendingEmailId] = useState(null);
+  const [selectedOrderDetails, setSelectedOrderDetails] = useState(null);
   const [siteContent, setSiteContentState] = useState(null);
 
   // Login form state
@@ -98,13 +107,14 @@ export default function AdminDashboardApp() {
     if (!session) return;
     setLoading(true);
     try {
-      const [m, prods, posts, media, leads, content] = await Promise.all([
+      const [m, prods, posts, media, leads, content, orders] = await Promise.all([
         getDashboardMetrics(),
         getProducts(true),
         getPosts(true),
         getMediaAssets(),
         getLeads(),
         getSiteContent(),
+        getOrders(),
       ]);
       setMetrics(m);
       setProductsList(prods);
@@ -112,6 +122,7 @@ export default function AdminDashboardApp() {
       setMediaList(media);
       setLeadsList(leads);
       setSiteContentState(content);
+      setOrdersList(orders || []);
     } catch (err) {
       console.error('Error fetching admin data:', err);
       showToast('Error refreshing data', 'error');
@@ -299,7 +310,15 @@ export default function AdminDashboardApp() {
             onClick={() => { setActiveTab('leads'); setSidebarOpen(false); }}
           >
             <span className="admin-nav-icon">👥</span>
-            CRM & Leads
+            CRM &amp; Leads
+          </button>
+          <button
+            type="button"
+            className={`admin-nav-item ${activeTab === 'orders' ? 'active' : ''}`}
+            onClick={() => { setActiveTab('orders'); setSidebarOpen(false); }}
+          >
+            <span className="admin-nav-icon">📋</span>
+            Orders &amp; Deliveries
           </button>
           <button
             type="button"
@@ -307,14 +326,14 @@ export default function AdminDashboardApp() {
             onClick={() => { setActiveTab('settings'); setSidebarOpen(false); }}
           >
             <span className="admin-nav-icon">⚙️</span>
-            Integrations & API
+            Integrations &amp; API
           </button>
         </nav>
 
         <div className="admin-sidebar-footer">
           <div className="admin-user-info">
-            <span className="admin-user-name">{session.user.fullName}</span>
-            <span className="admin-user-role">{session.user.email}</span>
+            <span className="admin-user-name">{session?.user?.fullName || session?.fullName || 'Abhi Singh'}</span>
+            <span className="admin-user-role">{session?.user?.email || session?.email || 'admin@abhisingh.me'}</span>
           </div>
           <button type="button" className="admin-logout-btn" onClick={handleLogoutClick} title="Logout">
             Sign Out
@@ -342,6 +361,7 @@ export default function AdminDashboardApp() {
               {activeTab === 'media' && 'Media Asset Library'}
               {activeTab === 'content' && 'Website Content & Credentials'}
               {activeTab === 'leads' && 'CRM Leads & Attribution Log'}
+              {activeTab === 'orders' && 'Store Orders & Digital Deliveries'}
               {activeTab === 'settings' && 'System Integrations & API Settings'}
             </h2>
           </div>
@@ -1224,6 +1244,554 @@ export default function AdminDashboardApp() {
                       ))}
                   </tbody>
                 </table>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 6.5: ORDERS & DELIVERIES MANAGEMENT */}
+          {activeTab === 'orders' && (
+            <div className="admin-table-card">
+              <div className="admin-table-header">
+                <div>
+                  <h3 className="admin-table-title">Orders &amp; Digital Deliveries ({ordersList.length})</h3>
+                  <span style={{ fontSize: '0.8rem', color: 'var(--admin-text-muted)' }}>
+                    Audit log of customer purchases, free downloads, payment transactions, and automated PDF delivery statuses.
+                  </span>
+                </div>
+                <div className="admin-table-tools">
+                  <input
+                    type="text"
+                    className="admin-input"
+                    placeholder="Search by order ID, name, email, product..."
+                    style={{ width: '260px', padding: '0.5rem 0.75rem' }}
+                    value={orderSearch}
+                    onChange={(e) => setOrderSearch(e.target.value)}
+                  />
+                  <select
+                    className="admin-input"
+                    style={{ width: '180px', padding: '0.5rem 0.75rem' }}
+                    value={orderStatusFilter}
+                    onChange={(e) => setOrderStatusFilter(e.target.value)}
+                  >
+                    <option value="all">All Orders</option>
+                    <option value="free">Free Downloads</option>
+                    <option value="paid">Paid Orders</option>
+                    <option value="pending_payment">Pending Payments</option>
+                    <option value="successful_payment">Successful Payments</option>
+                    <option value="failed_payment">Failed Payments</option>
+                    <option value="emails_sent">Emails Sent</option>
+                    <option value="delivery_failed">Email Delivery Failed</option>
+                  </select>
+                  <button
+                    type="button"
+                    className="admin-btn-secondary"
+                    onClick={() => {
+                      if (ordersList.length === 0) {
+                        showToast('No orders to export', 'error');
+                        return;
+                      }
+                      const headers = ['Order ID', 'Customer Name', 'Customer Email', 'Product Name', 'Amount', 'Currency', 'Payment Method', 'Payment ID', 'Payment Status', 'Delivery Status', 'Date'];
+                      const rows = ordersList.map((o) => [
+                        `"${o.id}"`,
+                        `"${o.customer_name || ''}"`,
+                        `"${o.customer_email || ''}"`,
+                        `"${o.product_name || ''}"`,
+                        o.amount || 0,
+                        `"${o.currency || 'INR'}"`,
+                        `"${o.payment_method || ''}"`,
+                        `"${o.payment_id || ''}"`,
+                        `"${o.payment_status || o.status || 'paid'}"`,
+                        `"${o.delivery_status || 'delivered'}"`,
+                        `"${o.created_at || ''}"`,
+                      ]);
+                      const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
+                      const encodedUri = encodeURI(csvContent);
+                      const link = document.createElement('a');
+                      link.setAttribute('href', encodedUri);
+                      link.setAttribute('download', `elrx_orders_${new Date().toISOString().slice(0, 10)}.csv`);
+                      document.body.appendChild(link);
+                      link.click();
+                      document.body.removeChild(link);
+                      showToast(`✓ Exported ${ordersList.length} orders to CSV`);
+                    }}
+                  >
+                    📥 Export CSV
+                  </button>
+                  <button
+                    type="button"
+                    className="admin-btn-secondary"
+                    onClick={refreshAllData}
+                  >
+                    ↻ Refresh
+                  </button>
+                </div>
+              </div>
+
+              {/* Metric stats row */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem', padding: '1rem 1.5rem', background: '#F9FAFB', borderBottom: '1px solid var(--admin-border)' }}>
+                <div>
+                  <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: 'var(--admin-text-muted)', fontWeight: 700 }}>Total Orders</div>
+                  <div style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--admin-text)' }}>{ordersList.length}</div>
+                </div>
+                <div>
+                  <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: 'var(--admin-text-muted)', fontWeight: 700 }}>Gross Revenue</div>
+                  <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#FF6200' }}>
+                    ₹{ordersList.filter(o => o.payment_status === 'paid' || o.payment_status === 'PAID' || o.status === 'completed').reduce((sum, o) => sum + (Number(o.amount) || 0), 0).toLocaleString('en-IN')}
+                  </div>
+                </div>
+                <div>
+                  <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: 'var(--admin-text-muted)', fontWeight: 700 }}>Deliveries Sent</div>
+                  <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#10B981' }}>
+                    {ordersList.filter(o => (o.delivery_status || '').toLowerCase() === 'delivered' || o.delivery_status === 'SENT').length} / {ordersList.length}
+                  </div>
+                </div>
+                <div>
+                  <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: 'var(--admin-text-muted)', fontWeight: 700 }}>Funnel Breakdown</div>
+                  <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--admin-text)', marginTop: '4px' }}>
+                    {ordersList.filter(o => o.is_free || Number(o.amount) === 0 || o.payment_status === 'FREE').length} Free · {ordersList.filter(o => !o.is_free && Number(o.amount) > 0).length} Paid
+                  </div>
+                </div>
+              </div>
+
+              <div className="admin-table-responsive">
+                <table className="admin-table">
+                  <thead>
+                    <tr>
+                      <th>Order ID</th>
+                      <th>Customer</th>
+                      <th>Product &amp; PDF</th>
+                      <th>Amount</th>
+                      <th>Payment Provider &amp; ID</th>
+                      <th>Payment Status</th>
+                      <th>Delivery Status</th>
+                      <th>Date &amp; Time</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {ordersList
+                      .filter((o) => {
+                        const q = orderSearch.toLowerCase();
+                        const matchesSearch =
+                          !q ||
+                          (o.id || '').toLowerCase().includes(q) ||
+                          (o.customer_name || '').toLowerCase().includes(q) ||
+                          (o.customer_email || '').toLowerCase().includes(q) ||
+                          (o.product_name || '').toLowerCase().includes(q) ||
+                          (o.payment_id || '').toLowerCase().includes(q);
+
+                        let matchesFilter = true;
+                        if (orderStatusFilter === 'free') {
+                          matchesFilter = o.is_free || Number(o.amount) === 0 || o.payment_status === 'FREE';
+                        } else if (orderStatusFilter === 'paid') {
+                          matchesFilter = !o.is_free && Number(o.amount) > 0;
+                        } else if (orderStatusFilter === 'pending_payment') {
+                          matchesFilter = (o.payment_status || '').toLowerCase() === 'pending' && !o.is_free;
+                        } else if (orderStatusFilter === 'successful_payment') {
+                          matchesFilter = (o.payment_status || '').toLowerCase() === 'paid' || o.payment_status === 'FREE' || o.status === 'completed';
+                        } else if (orderStatusFilter === 'failed_payment') {
+                          matchesFilter = (o.payment_status || '').toLowerCase() === 'failed';
+                        } else if (orderStatusFilter === 'emails_sent') {
+                          matchesFilter = (o.delivery_status || '').toLowerCase() === 'delivered' || o.delivery_status === 'SENT';
+                        } else if (orderStatusFilter === 'delivery_failed') {
+                          matchesFilter = (o.delivery_status || '').toLowerCase() === 'failed' || o.delivery_status === 'FAILED';
+                        }
+                        return matchesSearch && matchesFilter;
+                      })
+                      .map((o) => {
+                        const isFreeOrder = o.is_free || Number(o.amount) === 0 || o.payment_status === 'FREE';
+                        const effectivePdf = o.pdf_url;
+                        const isDelivered = (o.delivery_status || 'delivered').toLowerCase() === 'delivered' || o.delivery_status === 'SENT';
+                        const isPaid = (o.payment_status || o.status || '').toLowerCase() === 'paid' || o.payment_status === 'FREE' || o.status === 'completed';
+                        const isTestOrder = Boolean(o.is_test || (o.payment_method || '').includes('test') || (o.payment_method || '').includes('sandbox'));
+
+                        return (
+                          <tr key={o.id}>
+                            <td style={{ fontFamily: 'monospace', fontSize: '0.8rem', fontWeight: 700 }}>
+                              <div>{o.id}</div>
+                              {isTestOrder && (
+                                <span style={{ display: 'inline-block', fontSize: '0.64rem', background: '#FEF3C7', color: '#D97706', padding: '1px 5px', borderRadius: '3px', fontWeight: 800, marginTop: '2px' }}>
+                                  TEST MODE
+                                </span>
+                              )}
+                            </td>
+                            <td>
+                              <div style={{ fontWeight: 700 }}>{o.customer_name || 'Store Customer'}</div>
+                              <div style={{ fontSize: '0.78rem', color: '#6B7280' }}>{o.customer_email}</div>
+                            </td>
+                            <td>
+                              <div style={{ fontWeight: 600 }}>{o.product_name}</div>
+                              {effectivePdf ? (
+                                <a
+                                  href={effectivePdf}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  style={{ fontSize: '0.74rem', color: '#FF6200', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '3px' }}
+                                >
+                                  📄 View PDF ↗
+                                </a>
+                              ) : (
+                                <span style={{ fontSize: '0.74rem', color: '#9CA3AF' }}>No PDF attached</span>
+                              )}
+                            </td>
+                            <td style={{ fontWeight: 700 }}>
+                              {isFreeOrder ? (
+                                <span style={{ color: '#10B981' }}>Free</span>
+                              ) : (
+                                `₹${Number(o.amount).toLocaleString('en-IN')} ${o.currency || 'INR'}`
+                              )}
+                            </td>
+                            <td>
+                              <div style={{ textTransform: 'capitalize', fontWeight: 600, fontSize: '0.82rem' }}>
+                                {o.payment_method || 'Razorpay'}
+                              </div>
+                              <div style={{ fontFamily: 'monospace', fontSize: '0.72rem', color: '#6B7280' }}>
+                                {o.payment_id || 'n/a'}
+                              </div>
+                            </td>
+                            <td>
+                              <span
+                                style={{
+                                  display: 'inline-block',
+                                  padding: '2px 8px',
+                                  borderRadius: '4px',
+                                  fontSize: '0.72rem',
+                                  fontWeight: 700,
+                                  background: isPaid ? '#DCFCE7' : '#FEF3C7',
+                                  color: isPaid ? '#15803D' : '#B45309',
+                                }}
+                              >
+                                {isPaid ? '✓ Paid' : (o.payment_status || 'Pending')}
+                              </span>
+                            </td>
+                            <td>
+                              <span
+                                style={{
+                                  display: 'inline-block',
+                                  padding: '2px 8px',
+                                  borderRadius: '4px',
+                                  fontSize: '0.72rem',
+                                  fontWeight: 700,
+                                  background: isDelivered ? '#DCFCE7' : (o.delivery_status === 'failed' ? '#FEE2E2' : '#FEF3C7'),
+                                  color: isDelivered ? '#15803D' : (o.delivery_status === 'failed' ? '#B91C1C' : '#B45309'),
+                                }}
+                              >
+                                {isDelivered ? '✓ Delivered' : (o.delivery_status || 'Pending')}
+                              </span>
+                            </td>
+                            <td style={{ fontSize: '0.78rem', color: '#6B7280' }}>
+                              {o.created_at ? new Date(o.created_at).toLocaleString() : 'Recent'}
+                            </td>
+                            <td>
+                              <div style={{ display: 'flex', gap: '6px' }}>
+                                <button
+                                  type="button"
+                                  className="admin-btn-secondary"
+                                  style={{ padding: '0.35rem 0.65rem', fontSize: '0.76rem', borderRadius: '4px', whiteSpace: 'nowrap' }}
+                                  title="View complete order details"
+                                  onClick={() => setSelectedOrderDetails(o)}
+                                >
+                                  👁️ Details
+                                </button>
+                                <button
+                                  type="button"
+                                  className="admin-btn-secondary"
+                                  style={{ padding: '0.35rem 0.65rem', fontSize: '0.76rem', borderRadius: '4px', whiteSpace: 'nowrap' }}
+                                  disabled={isResendingEmailId === o.id}
+                                  onClick={async () => {
+                                    setIsResendingEmailId(o.id);
+                                    try {
+                                      showToast(`Sending deliverable to ${o.customer_email}...`);
+                                      // Call serverless retry API if available
+                                      const apiRes = await fetch('/api/orders', {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ action: 'retry_delivery', orderId: o.id }),
+                                      }).catch(() => null);
+
+                                      if (!apiRes || !apiRes.ok) {
+                                        await sendProductDeliveryEmail({
+                                          orderId: o.id,
+                                          customerName: o.customer_name,
+                                          customerEmail: o.customer_email,
+                                          product: {
+                                            name: o.product_name,
+                                            fileUrl: o.pdf_url,
+                                          },
+                                          paymentId: o.payment_id,
+                                          amount: o.amount,
+                                          currency: o.currency || 'INR',
+                                        });
+                                      }
+                                      await updateOrder(o.id, { delivery_status: 'delivered' });
+                                      showToast(`✓ Delivery email sent to ${o.customer_email}!`);
+                                      refreshAllData();
+                                    } catch (err) {
+                                      showToast(`Failed sending email: ${err.message}`, 'error');
+                                    } finally {
+                                      setIsResendingEmailId(null);
+                                    }
+                                  }}
+                                >
+                                  {isResendingEmailId === o.id ? 'Sending...' : '✉️ Resend'}
+                                </button>
+                                <button
+                                  type="button"
+                                  style={{ background: '#FEE2E2', border: '1px solid #FCA5A5', color: '#DC2626', borderRadius: '4px', padding: '0.35rem 0.65rem', fontSize: '0.76rem', cursor: 'pointer' }}
+                                  title="Delete order record"
+                                  onClick={async () => {
+                                    if (window.confirm(`Delete order record ${o.id}?`)) {
+                                      await deleteOrder(o.id);
+                                      showToast(`Order ${o.id} deleted`);
+                                      refreshAllData();
+                                    }
+                                  }}
+                                >
+                                  🗑️
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    {ordersList.length === 0 && (
+                      <tr>
+                        <td colSpan={9} style={{ textAlign: 'center', padding: '2.5rem', color: '#9CA3AF' }}>
+                          No orders found yet. Digital product purchases and free PDF downloads will appear here in real-time.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* ORDER DETAIL AUDIT MODAL */}
+          {selectedOrderDetails && (
+            <div
+              className="admin-modal-backdrop"
+              onClick={() => setSelectedOrderDetails(null)}
+              style={{
+                position: 'fixed',
+                inset: 0,
+                background: 'rgba(0,0,0,0.6)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                zIndex: 9999,
+                padding: '1rem',
+              }}
+            >
+              <div
+                className="admin-modal-box"
+                style={{
+                  background: '#FFFFFF',
+                  borderRadius: '8px',
+                  width: '100%',
+                  maxWidth: '680px',
+                  border: '2px solid #212121',
+                  boxShadow: '6px 6px 0 #212121',
+                  overflow: 'hidden',
+                }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div
+                  style={{
+                    background: '#121417',
+                    padding: '1.25rem 1.5rem',
+                    color: '#FFFFFF',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                  }}
+                >
+                  <div>
+                    <span style={{ fontSize: '0.72rem', background: '#FF6200', color: '#FFF', padding: '2px 6px', borderRadius: '3px', fontWeight: 800, textTransform: 'uppercase' }}>
+                      Order Audit
+                    </span>
+                    <h3 style={{ margin: '4px 0 0 0', fontSize: '1.2rem', fontFamily: 'monospace' }}>
+                      {selectedOrderDetails.id}
+                    </h3>
+                  </div>
+                  <button
+                    type="button"
+                    style={{ background: 'transparent', border: 0, color: '#FFFFFF', fontSize: '1.25rem', cursor: 'pointer' }}
+                    onClick={() => setSelectedOrderDetails(null)}
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <div style={{ padding: '1.5rem', maxHeight: '70vh', overflowY: 'auto' }}>
+                  {/* Grid details */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1.25rem', marginBottom: '1.5rem' }}>
+                    <div style={{ background: '#F9FAFB', padding: '1rem', borderRadius: '6px', border: '1px solid #E5E7EB' }}>
+                      <div style={{ fontSize: '0.74rem', textTransform: 'uppercase', color: '#6B7280', fontWeight: 700, marginBottom: '4px' }}>
+                        Customer Information
+                      </div>
+                      <div style={{ fontWeight: 800, fontSize: '1rem', color: '#111827' }}>
+                        {selectedOrderDetails.customer_name || 'Store Customer'}
+                      </div>
+                      <div style={{ fontSize: '0.86rem', color: '#4B5563', marginTop: '2px' }}>
+                        {selectedOrderDetails.customer_email}
+                      </div>
+                      <div style={{ fontSize: '0.76rem', color: '#9CA3AF', marginTop: '4px' }}>
+                        Region: {selectedOrderDetails.region || 'India'}
+                      </div>
+                    </div>
+
+                    <div style={{ background: '#F9FAFB', padding: '1rem', borderRadius: '6px', border: '1px solid #E5E7EB' }}>
+                      <div style={{ fontSize: '0.74rem', textTransform: 'uppercase', color: '#6B7280', fontWeight: 700, marginBottom: '4px' }}>
+                        Product Purchased
+                      </div>
+                      <div style={{ fontWeight: 800, fontSize: '1rem', color: '#111827' }}>
+                        {selectedOrderDetails.product_name}
+                      </div>
+                      <div style={{ fontSize: '0.86rem', fontWeight: 700, color: selectedOrderDetails.is_free ? '#10B981' : '#FF6200', marginTop: '2px' }}>
+                        {selectedOrderDetails.is_free ? 'Free Download' : `₹${selectedOrderDetails.amount} ${selectedOrderDetails.currency || 'INR'}`}
+                      </div>
+                      {selectedOrderDetails.pdf_url && (
+                        <div style={{ marginTop: '6px' }}>
+                          <a
+                            href={selectedOrderDetails.pdf_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{ fontSize: '0.78rem', color: '#FF6200', textDecoration: 'none', fontWeight: 700 }}
+                          >
+                            📄 View Attached PDF Deliverable &rarr;
+                          </a>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Payment & Gateway Verification */}
+                  <div style={{ border: '1px solid #E5E7EB', borderRadius: '6px', padding: '1rem', marginBottom: '1.25rem' }}>
+                    <div style={{ fontSize: '0.74rem', textTransform: 'uppercase', color: '#6B7280', fontWeight: 700, marginBottom: '8px' }}>
+                      Payment &amp; Transaction Details
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem', fontSize: '0.85rem' }}>
+                      <div>
+                        <div style={{ color: '#9CA3AF', fontSize: '0.72rem' }}>Payment Gateway:</div>
+                        <div style={{ fontWeight: 700, textTransform: 'capitalize' }}>{selectedOrderDetails.payment_method || 'Razorpay'}</div>
+                      </div>
+                      <div>
+                        <div style={{ color: '#9CA3AF', fontSize: '0.72rem' }}>Payment Reference:</div>
+                        <div style={{ fontFamily: 'monospace', fontSize: '0.78rem' }}>{selectedOrderDetails.payment_id || 'n/a'}</div>
+                      </div>
+                      <div>
+                        <div style={{ color: '#9CA3AF', fontSize: '0.72rem' }}>Verification Status:</div>
+                        <div>
+                          <span
+                            style={{
+                              display: 'inline-block',
+                              padding: '2px 8px',
+                              borderRadius: '4px',
+                              fontSize: '0.72rem',
+                              fontWeight: 800,
+                              background:
+                                selectedOrderDetails.payment_status === 'paid' || selectedOrderDetails.status === 'completed'
+                                  ? '#DCFCE7'
+                                  : '#FEF3C7',
+                              color:
+                                selectedOrderDetails.payment_status === 'paid' || selectedOrderDetails.status === 'completed'
+                                  ? '#15803D'
+                                  : '#B45309',
+                            }}
+                          >
+                            {selectedOrderDetails.payment_status === 'paid' || selectedOrderDetails.status === 'completed'
+                              ? '✓ Verified Paid'
+                              : (selectedOrderDetails.payment_status || 'Pending')}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Delivery Status & Diagnostics */}
+                  <div style={{ border: '1px solid #E5E7EB', borderRadius: '6px', padding: '1rem', marginBottom: '1.25rem' }}>
+                    <div style={{ fontSize: '0.74rem', textTransform: 'uppercase', color: '#6B7280', fontWeight: 700, marginBottom: '8px' }}>
+                      Email &amp; Delivery Tracking
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem', fontSize: '0.85rem' }}>
+                      <div>
+                        <div style={{ color: '#9CA3AF', fontSize: '0.72rem' }}>Delivery Status:</div>
+                        <div style={{ fontWeight: 700, color: '#10B981' }}>{selectedOrderDetails.delivery_status || 'Delivered'}</div>
+                      </div>
+                      <div>
+                        <div style={{ color: '#9CA3AF', fontSize: '0.72rem' }}>Created Timestamp:</div>
+                        <div style={{ fontSize: '0.78rem' }}>{selectedOrderDetails.created_at ? new Date(selectedOrderDetails.created_at).toLocaleString() : 'N/A'}</div>
+                      </div>
+                      <div>
+                        <div style={{ color: '#9CA3AF', fontSize: '0.72rem' }}>Delivery Attempts:</div>
+                        <div style={{ fontWeight: 700 }}>{selectedOrderDetails.delivery_attempt_count || 1}</div>
+                      </div>
+                    </div>
+                    {selectedOrderDetails.delivery_error && (
+                      <div style={{ marginTop: '0.75rem', background: '#FEE2E2', color: '#991B1B', padding: '0.5rem', borderRadius: '4px', fontSize: '0.78rem' }}>
+                        <strong>Error Log:</strong> {selectedOrderDetails.delivery_error}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Marketing Attribution */}
+                  <div style={{ fontSize: '0.75rem', color: '#9CA3AF' }}>
+                    Attribution: Source: <code>{selectedOrderDetails.utm_source || 'direct'}</code> · Medium: <code>{selectedOrderDetails.utm_medium || 'web'}</code> · Campaign: <code>{selectedOrderDetails.utm_campaign || 'elrx_store'}</code>
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    background: '#F9FAFB',
+                    padding: '1rem 1.5rem',
+                    borderTop: '1px solid #E5E7EB',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                  }}
+                >
+                  <button
+                    type="button"
+                    className="admin-btn-secondary"
+                    onClick={() => setSelectedOrderDetails(null)}
+                  >
+                    Close
+                  </button>
+                  <button
+                    type="button"
+                    className="admin-btn-primary"
+                    disabled={isResendingEmailId === selectedOrderDetails.id}
+                    onClick={async () => {
+                      setIsResendingEmailId(selectedOrderDetails.id);
+                      try {
+                        showToast(`Re-sending PDF to ${selectedOrderDetails.customer_email}...`);
+                        await sendProductDeliveryEmail({
+                          orderId: selectedOrderDetails.id,
+                          customerName: selectedOrderDetails.customer_name,
+                          customerEmail: selectedOrderDetails.customer_email,
+                          product: {
+                            name: selectedOrderDetails.product_name,
+                            fileUrl: selectedOrderDetails.pdf_url,
+                          },
+                          paymentId: selectedOrderDetails.payment_id,
+                          amount: selectedOrderDetails.amount,
+                          currency: selectedOrderDetails.currency || 'INR',
+                        });
+                        await updateOrder(selectedOrderDetails.id, { delivery_status: 'delivered' });
+                        showToast(`✓ PDF delivery sent to ${selectedOrderDetails.customer_email}`);
+                        refreshAllData();
+                        setSelectedOrderDetails(null);
+                      } catch (err) {
+                        showToast(`Failed sending email: ${err.message}`, 'error');
+                      } finally {
+                        setIsResendingEmailId(null);
+                      }
+                    }}
+                  >
+                    {isResendingEmailId === selectedOrderDetails.id ? 'Sending...' : '✉️ Resend PDF Deliverable'}
+                  </button>
+                </div>
               </div>
             </div>
           )}

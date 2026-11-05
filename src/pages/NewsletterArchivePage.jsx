@@ -1,49 +1,83 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import DOMPurify from 'dompurify';
+import { parseMarkdownToHtml } from '../utils/markdown';
 import { initialNewsletters } from '../data/newsletters';
-import { getPosts } from '../services/db';
+import { getPosts, getCategories } from '../services/db';
 import { submitNewsletterSignup } from '../utils/tracking';
 import useScrollReveal from '../hooks/useScrollReveal';
+import { ArticleVideoPlayer } from '../components/ArticleVideoPlayer';
+import { formatArticleThumbnailUrl, DEFAULT_BLOG_COVER } from '../utils/mediaHelper';
+import { EditableText, EditableSection, EditableButton } from '../components/live-editor';
 
 export default function NewsletterArchivePage({ selectedEditionId, onSelectEdition }) {
   const [activeEditionId, setActiveEditionId] = useState(selectedEditionId || null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
+  const [categoriesList, setCategoriesList] = useState(['All', 'Framework', 'Endurance', 'Nutrition', 'Kettlebells', 'Habits']);
   const [email, setEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [signupStatus, setSignupStatus] = useState(null);
   const [allArticles, setAllArticles] = useState(initialNewsletters);
 
-  useScrollReveal([allArticles, activeEditionId, filteredArticles]);
-
   useEffect(() => {
     let isMounted = true;
     async function loadPosts() {
       try {
-        const livePosts = await getPosts(false);
-        if (isMounted && livePosts && livePosts.length > 0) {
-          const normalized = livePosts.map((n) => ({
-            id: n.id,
-            title: n.title,
-            category: n.category || 'Framework',
-            date: n.published_date || n.date || 'November 2026',
-            readTime: n.read_time || n.readTime || '4 min read',
-            summary: n.summary || '',
-            content: n.content || '',
-            thumbnail: n.thumbnail_url || n.thumbnail || 'assets/author-photo.png',
-            status: n.status || 'published',
-          }));
-          setAllArticles(normalized);
+        const [livePosts, liveCategories] = await Promise.all([
+          getPosts(false),
+          getCategories(),
+        ]);
+        if (isMounted) {
+          if (livePosts) {
+            const normalized = livePosts.map((n) => ({
+              id: n.id,
+              title: n.title,
+              category: n.category || 'Framework',
+              date: n.published_date || n.date || 'November 2026',
+              readTime: n.read_time || n.readTime || '4 min read',
+              summary: n.summary || '',
+              excerpt: n.excerpt || '',
+              content: n.content || '',
+              thumbnail: n.thumbnail_url || n.thumbnail || '',
+              video_url: n.video_url || n.videoUrl || '',
+              status: n.status || 'published',
+            }));
+            setAllArticles(normalized);
+          }
+          if (liveCategories && liveCategories.length > 0) {
+            setCategoriesList(['All', ...liveCategories]);
+          }
         }
       } catch (err) {
-        console.warn('Failed loading live archive articles:', err);
+        console.warn('Failed loading live archive articles & categories:', err);
       }
     }
     loadPosts();
-    return () => { isMounted = false; };
+
+    // Real-time synchronization listeners
+    const handleSync = () => loadPosts();
+    window.addEventListener('elrx_data_changed', handleSync);
+    window.addEventListener('storage', handleSync);
+    window.addEventListener('focus', handleSync);
+
+    let bc = null;
+    try {
+      if ('BroadcastChannel' in window) {
+        bc = new BroadcastChannel('elrx_live_sync');
+        bc.onmessage = handleSync;
+      }
+    } catch {}
+
+    return () => {
+      isMounted = false;
+      window.removeEventListener('elrx_data_changed', handleSync);
+      window.removeEventListener('storage', handleSync);
+      window.removeEventListener('focus', handleSync);
+      if (bc) bc.close();
+    };
   }, []);
 
-  const categories = ['All', 'Framework', 'Endurance', 'Nutrition', 'Kettlebells', 'Habits'];
+  const categories = categoriesList;
 
   const filteredArticles = useMemo(() => {
     return allArticles.filter((item) => {
@@ -58,6 +92,8 @@ export default function NewsletterArchivePage({ selectedEditionId, onSelectEditi
       return matchesCategory && matchesSearch;
     });
   }, [allArticles, selectedCategory, searchQuery]);
+
+  useScrollReveal([allArticles, activeEditionId, filteredArticles]);
 
   const activeEdition = allArticles.find((n) => n.id === activeEditionId);
 
@@ -75,7 +111,7 @@ export default function NewsletterArchivePage({ selectedEditionId, onSelectEditi
   return (
     <div className="newsletter-archive-page">
       <div className="page-wrap">
-        <section style={{ paddingTop: '3.5rem', paddingBottom: '4.5rem' }}>
+        <EditableSection sectionKey="archive.main" sectionLabel="Newsletter Archive Section" style={{ paddingTop: '3.5rem', paddingBottom: '4.5rem' }}>
 
           {/* ── 1. ARTICLE DETAIL VIEW ── */}
           {activeEdition ? (
@@ -96,11 +132,11 @@ export default function NewsletterArchivePage({ selectedEditionId, onSelectEditi
 
               <article
                 style={{
-                  border: '2px solid var(--black)',
+                  border: '1px solid var(--black)',
                   padding: '2.5rem 2.25rem',
                   borderRadius: '6px',
                   backgroundColor: 'var(--white)',
-                  boxShadow: '6px 6px 0 var(--black)',
+                  boxShadow: '3px 3px 0 var(--black)',
                   marginBottom: '3rem',
                 }}
               >
@@ -127,21 +163,31 @@ export default function NewsletterArchivePage({ selectedEditionId, onSelectEditi
                   {activeEdition.title}
                 </h1>
 
-                {activeEdition.thumbnail && (
-                  <div style={{ marginBottom: '2rem', border: '2px solid var(--black)', borderRadius: '4px', overflow: 'hidden', maxHeight: '380px' }}>
-                    <img
-                      src={activeEdition.thumbnail}
-                      alt={activeEdition.title}
-                      style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-                    />
-                  </div>
+                {/* Video Player or Thumbnail Image */}
+                {(activeEdition.video_url || activeEdition.videoUrl) ? (
+                  <ArticleVideoPlayer
+                    videoUrl={activeEdition.video_url || activeEdition.videoUrl}
+                    title={activeEdition.title}
+                    style={{ marginBottom: '2rem' }}
+                  />
+                ) : (
+                  (activeEdition.thumbnail || activeEdition.thumbnail_url) && (
+                    <div style={{ marginBottom: '2rem', border: '1px solid var(--black)', borderRadius: '4px', overflow: 'hidden', maxHeight: '380px' }}>
+                      <img
+                        src={formatArticleThumbnailUrl(activeEdition.thumbnail || activeEdition.thumbnail_url)}
+                        alt={activeEdition.title}
+                        onError={(e) => { e.currentTarget.src = DEFAULT_BLOG_COVER; }}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                      />
+                    </div>
+                  )
                 )}
 
                 <div
                   className="edition-body"
                   style={{ fontSize: 'var(--text-body)', lineHeight: 'var(--line-height-body)', color: 'var(--text-color)', maxWidth: 'var(--measure-prose)' }}
                   dangerouslySetInnerHTML={{
-                    __html: DOMPurify.sanitize(activeEdition.content, {
+                    __html: DOMPurify.sanitize(parseMarkdownToHtml(activeEdition.content), {
                       ALLOWED_TAGS: [
                         'p', 'br', 'strong', 'b', 'em', 'i', 'u', 's', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
                         'ul', 'ol', 'li', 'blockquote', 'a', 'img', 'hr', 'code', 'pre', 'span', 'div'
@@ -155,7 +201,7 @@ export default function NewsletterArchivePage({ selectedEditionId, onSelectEditi
                 {/* Author Card */}
                 <div
                   style={{
-                    borderTop: '2px solid var(--black)',
+                    borderTop: '1px solid var(--black)',
                     marginTop: '2.5rem',
                     paddingTop: '1.75rem',
                     display: 'flex',
@@ -166,7 +212,7 @@ export default function NewsletterArchivePage({ selectedEditionId, onSelectEditi
                   <img
                     src="assets/author-photo.png"
                     alt="Abhi Singh"
-                    style={{ width: '56px', height: '56px', borderRadius: '4px', border: '2px solid var(--black)' }}
+                    style={{ width: '56px', height: '56px', borderRadius: '4px', border: '1px solid var(--black)' }}
                   />
                   <div>
                     <strong style={{ display: 'block', fontSize: '1rem', fontFamily: 'var(--font-heading)', color: 'var(--text-color)' }}>
@@ -182,11 +228,11 @@ export default function NewsletterArchivePage({ selectedEditionId, onSelectEditi
               {/* Newsletter signup at the bottom of the article per Design Instructions 5.4 */}
               <div
                 style={{
-                  border: '2px solid var(--black)',
+                  border: '1px solid var(--black)',
                   padding: '2.25rem',
                   borderRadius: '6px',
                   backgroundColor: 'var(--white)',
-                  boxShadow: '4px 4px 0 var(--yellow)',
+                  boxShadow: '3px 3px 0 var(--yellow)',
                   maxWidth: '640px',
                   margin: '0 auto',
                 }}
@@ -224,7 +270,7 @@ export default function NewsletterArchivePage({ selectedEditionId, onSelectEditi
                   <div
                     style={{
                       backgroundColor: 'var(--yellow)',
-                      border: '2px solid var(--black)',
+                      border: '1px solid var(--black)',
                       padding: '0.85rem 1.25rem',
                       fontWeight: '700',
                       borderRadius: '4px',
@@ -240,12 +286,19 @@ export default function NewsletterArchivePage({ selectedEditionId, onSelectEditi
             <div>
               <div className="section-header" style={{ marginBottom: '1rem' }}>
                 <h1 className="section-title-underlined" style={{ margin: 0 }}>
-                  Content Archive &amp; Resources
+                  <EditableText
+                    as="span"
+                    contentKey="archive.heading"
+                    defaultValue="Content Archive & Resources"
+                  />
                 </h1>
               </div>
-              <p style={{ fontSize: 'var(--text-body)', color: 'var(--text-color)', marginBottom: '2rem', maxWidth: 'var(--measure-prose)', lineHeight: 'var(--line-height-body)' }}>
-                Field-tested kettlebell complexes, physical training breakdowns, and nutrition principles. Published directly from my weekly journal.
-              </p>
+              <EditableText
+                as="p"
+                contentKey="archive.subtitle"
+                defaultValue="Field-tested kettlebell complexes, physical training breakdowns, and nutrition principles. Published directly from my weekly journal."
+                style={{ fontSize: 'var(--text-body)', color: 'var(--text-color)', marginBottom: '2rem', maxWidth: 'var(--measure-prose)', lineHeight: 'var(--line-height-body)' }}
+              />
 
               {/* Search & Filter Bar */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', marginBottom: '2.5rem' }}>
@@ -257,13 +310,13 @@ export default function NewsletterArchivePage({ selectedEditionId, onSelectEditi
                     onChange={(e) => setSearchQuery(e.target.value)}
                     style={{
                       width: '100%',
-                      border: '2px solid var(--black)',
+                      border: '1px solid var(--black)',
                       borderRadius: '4px',
                       padding: '0.8rem 1rem',
                       fontFamily: 'var(--font-body)',
                       fontSize: '0.95rem',
                       outline: 'none',
-                      boxShadow: '2px 2px 0 var(--black)',
+                      boxShadow: '1px 1px 0 rgba(33, 33, 33, 0.12)',
                     }}
                   />
                 </div>
@@ -275,7 +328,7 @@ export default function NewsletterArchivePage({ selectedEditionId, onSelectEditi
                       key={cat}
                       type="button"
                       className={`btn-card ${selectedCategory === cat ? 'btn-paid' : 'btn-free'}`}
-                      style={{ width: 'auto', padding: '0.35rem 0.9rem', fontSize: '0.78rem', boxShadow: '2px 2px 0 var(--black)' }}
+                      style={{ width: 'auto', padding: '0.35rem 0.9rem', fontSize: '0.78rem', boxShadow: '1.5px 1.5px 0 var(--black)' }}
                       onClick={() => setSelectedCategory(cat)}
                     >
                       {cat}
@@ -311,16 +364,38 @@ export default function NewsletterArchivePage({ selectedEditionId, onSelectEditi
                             height: '110px',
                             flexShrink: 0,
                             borderRadius: '4px',
-                            border: '2px solid var(--black)',
+                            border: '1px solid var(--black)',
                             overflow: 'hidden',
+                            position: 'relative',
                           }}
                           className="hide-mobile"
                         >
                           <img
-                            src={edition.thumbnail}
+                            src={formatArticleThumbnailUrl(edition.thumbnail || edition.thumbnail_url)}
                             alt={edition.title}
+                            onError={(e) => { e.currentTarget.src = DEFAULT_BLOG_COVER; }}
                             style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                           />
+                          {(edition.video_url || edition.videoUrl) && (
+                            <span
+                              style={{
+                                position: 'absolute',
+                                bottom: '6px',
+                                right: '6px',
+                                background: 'rgba(33, 33, 33, 0.88)',
+                                color: '#FFFFFF',
+                                fontSize: '0.65rem',
+                                fontWeight: 700,
+                                padding: '2px 6px',
+                                borderRadius: '3px',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '3px',
+                              }}
+                            >
+                              <span style={{ color: 'var(--orange)', fontSize: '0.6rem' }}>▶</span> Video
+                            </span>
+                          )}
                         </div>
                       )}
 
@@ -336,9 +411,11 @@ export default function NewsletterArchivePage({ selectedEditionId, onSelectEditi
 
                         <h3
                           style={{
-                            fontFamily: 'var(--font-display)',
-                            fontSize: '1.35rem',
-                            lineHeight: 1.25,
+                            fontFamily: 'var(--font-heading)',
+                            fontSize: 'var(--text-h3)',
+                            fontWeight: 600,
+                            lineHeight: 'var(--line-height-subheading)',
+                            letterSpacing: 'var(--letter-spacing-h3)',
                             marginBottom: '0.5rem',
                             color: 'var(--black)',
                           }}
@@ -346,7 +423,7 @@ export default function NewsletterArchivePage({ selectedEditionId, onSelectEditi
                           {edition.title}
                         </h3>
 
-                        <p style={{ fontSize: '0.95rem', color: 'var(--black)', lineHeight: 1.6, margin: 0 }}>
+                        <p style={{ fontSize: 'var(--text-body)', color: 'var(--black)', lineHeight: 'var(--line-height-body)', margin: 0 }}>
                           {edition.summary}
                         </p>
 
@@ -361,7 +438,7 @@ export default function NewsletterArchivePage({ selectedEditionId, onSelectEditi
                 ) : (
                   <div
                     style={{
-                      border: '2px dashed var(--black)',
+                      border: '1px dashed var(--black)',
                       padding: '2.5rem',
                       textAlign: 'center',
                       borderRadius: '6px',
@@ -376,7 +453,7 @@ export default function NewsletterArchivePage({ selectedEditionId, onSelectEditi
             </div>
           )}
 
-        </section>
+        </EditableSection>
       </div>
     </div>
   );

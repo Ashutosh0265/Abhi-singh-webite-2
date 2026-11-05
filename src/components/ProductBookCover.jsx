@@ -3,7 +3,7 @@ import React from 'react';
 /**
  * ProductBookCover: Renders authentic, high-impact, distinctive book covers
  * for each individual product in the store, strictly complying with the
- * 4 brand colors: Orange (#FF6200), Yellow (#FFE785), White (#FFFFFF), Black (#000000).
+ * 4 brand colors: Orange (#FF6200), Yellow (#FFE785), White (#FFFFFF), Black (#212121).
  */
 export default function ProductBookCover({ product, isComingSoon = false }) {
   const id = product?.id || '';

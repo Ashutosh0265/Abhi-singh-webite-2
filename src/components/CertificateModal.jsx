@@ -131,11 +131,11 @@ export default function CertificateModal({ isOpen, item, onClose }) {
                 padding: '0.45rem 0.85rem',
                 fontSize: '0.78rem',
                 fontWeight: 700,
-                border: '2px solid var(--black)',
+                border: '1px solid var(--black)',
                 borderRadius: '4px',
                 background: selectedId === ach.id ? 'var(--orange)' : 'var(--white)',
                 color: selectedId === ach.id ? 'var(--white)' : 'var(--black)',
-                boxShadow: selectedId === ach.id ? '2px 2px 0 var(--black)' : 'none',
+                boxShadow: selectedId === ach.id ? '1.5px 1.5px 0 var(--black)' : 'none',
                 cursor: 'pointer',
                 whiteSpace: 'nowrap',
                 transition: 'all 0.15s ease',
@@ -157,7 +157,7 @@ export default function CertificateModal({ isOpen, item, onClose }) {
             maxHeight: '60vh',
             position: 'relative',
             background: 'var(--white)',
-            border: '2px solid var(--black)',
+            border: '1px solid var(--black)',
             borderRadius: '4px',
             display: 'flex',
             alignItems: 'center',
@@ -211,7 +211,7 @@ export default function CertificateModal({ isOpen, item, onClose }) {
               <strong style={{ display: 'block', fontSize: '1.2rem', marginBottom: '0.5rem', fontFamily: 'Lora, serif' }}>
                 {currentItem.title}
               </strong>
-              <p style={{ fontSize: '0.9rem', color: 'var(--black)', maxWidth: '440px', margin: '0 auto', lineHeight: 1.5 }}>
+              <p style={{ fontSize: 'var(--text-body)', color: 'var(--black)', maxWidth: '440px', margin: '0 auto', lineHeight: 'var(--line-height-body)' }}>
                 {currentItem.description}
               </p>
             </div>
@@ -220,7 +220,7 @@ export default function CertificateModal({ isOpen, item, onClose }) {
 
         {/* Description & Close */}
         <div className="credential-modal-footer" style={{ marginTop: '1rem' }}>
-          <p style={{ fontSize: '0.82rem', color: 'var(--black)', margin: 0, flex: 1, lineHeight: 1.5 }}>
+          <p style={{ fontSize: 'var(--text-body)', color: 'var(--black)', margin: 0, flex: 1, lineHeight: 'var(--line-height-body)' }}>
             {currentItem.description}
           </p>
           <button

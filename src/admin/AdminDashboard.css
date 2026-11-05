@@ -1,13 +1,13 @@
 /* ====================================================================
    ABHI SINGH ADMIN DASHBOARD & CMS STYLESHEET
-   Brand Tokens: #FF6200 (Orange), #FFE785 (Yellow), #000000 (Black), #FFFFFF (White)
+   Brand Tokens: #FF6200 (Orange), #FFE785 (Yellow), #212121 (Black), #FFFFFF (White)
    Fonts: Lora (Display / Headings), Arial (Body / Controls)
 ==================================================================== */
 
 :root {
   --admin-orange: #FF6200;
   --admin-yellow: #FFE785;
-  --admin-black: #000000;
+  --admin-black: #212121;
   --admin-white: #FFFFFF;
   --admin-border: #E5E7EB;
   --admin-border-dark: #111827;
@@ -640,12 +640,14 @@
 
 .admin-modal {
   background: var(--admin-white);
-  border-radius: 6px;
+  border: 1px solid var(--admin-border);
+  border-radius: 8px;
   width: 100%;
-  max-width: 720px;
+  max-width: 740px;
   max-height: 90vh;
   overflow-y: auto;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.2), 4px 4px 0 #212121;
+  box-sizing: border-box;
 }
 
 .admin-modal-header {
@@ -726,41 +728,161 @@
   color: var(--admin-black);
 }
 
+/* ── VECTOR ANIMATION & INTEGRATION CARDS (DEALDECK EDITORIAL) ── */
+.api-vector-wrap {
+  width: 52px;
+  height: 52px;
+  min-width: 52px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #F8FAFC;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  padding: 6px;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s;
+}
+
+.api-vector-wrap:hover {
+  transform: translateY(-2px) scale(1.04);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+}
+
+.api-vector-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.supabase-vector {
+  background: #F0FDF4;
+  border-color: rgba(62, 207, 142, 0.25);
+}
+
+.razorpay-vector {
+  background: #FFF7ED;
+  border-color: rgba(255, 98, 0, 0.25);
+}
+
+.paypal-vector {
+  background: #EFF6FF;
+  border-color: rgba(0, 112, 186, 0.25);
+}
+
+.zoho-vector {
+  background: #FEF2F2;
+  border-color: rgba(239, 68, 68, 0.25);
+}
+
+.resend-vector {
+  background: #F4F4F5;
+  border-color: rgba(39, 39, 42, 0.2);
+}
+
+.vector-plane-group {
+  animation: planeFloat 3s ease-in-out infinite;
+  transform-origin: center;
+}
+
+@keyframes planeFloat {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-3px) rotate(1.5deg);
+  }
+}
+
+.dealdeck-api-metric-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.25rem;
+  margin-bottom: 2rem;
+}
+
 .admin-integration-card {
-  border: 1px solid var(--admin-border);
-  padding: 1.35rem 1.4rem;
-  border-radius: 8px;
-  background: var(--admin-white);
+  position: relative;
+  border: 1px solid #E5E7EB;
+  border-radius: 14px;
+  background: #FFFFFF;
   display: flex;
   flex-direction: column;
-  transition: box-shadow 0.2s ease, border-color 0.2s ease;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+  overflow: hidden;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.04);
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s, border-color 0.25s;
+}
+
+.admin-integration-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.08);
+  border-color: rgba(255, 98, 0, 0.3);
 }
 
 .admin-integration-card:focus-within {
   border-color: var(--admin-orange);
-  box-shadow: 0 4px 14px rgba(255, 98, 0, 0.08);
+  box-shadow: 0 6px 20px rgba(255, 98, 0, 0.12);
 }
 
-.admin-integration-header {
+.admin-integration-top-stripe {
+  height: 4px;
+  width: 100%;
+}
+
+.admin-integration-stripe-supabase {
+  background: linear-gradient(90deg, #3ECF8E 0%, #249361 100%);
+}
+
+.admin-integration-stripe-razorpay {
+  background: linear-gradient(90deg, #FF6200 0%, #FF8A3D 100%);
+}
+
+.admin-integration-stripe-paypal {
+  background: linear-gradient(90deg, #0070BA 0%, #003087 100%);
+}
+
+.admin-integration-stripe-zoho {
+  background: linear-gradient(90deg, #EF4444 0%, #F59E0B 100%);
+}
+
+.admin-integration-stripe-resend {
+  background: linear-gradient(90deg, #18181B 0%, #FF6200 100%);
+}
+
+.admin-integration-body {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.admin-integration-header-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 0.35rem;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.admin-integration-title-group {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
 }
 
 .admin-integration-title {
   margin: 0;
   font-family: inherit;
-  font-size: 1.05rem;
+  font-size: 1.1rem;
   font-weight: 700;
-  color: var(--admin-black);
+  color: #111827;
+  line-height: 1.2;
 }
 
 .admin-integration-sub {
   font-size: 0.8rem;
-  color: var(--admin-text-muted);
-  margin: 0 0 1.15rem 0;
+  color: #6B7280;
+  margin: 0.2rem 0 0 0;
   line-height: 1.4;
 }
 
@@ -779,17 +901,17 @@
 }
 
 .admin-integration-card .admin-input {
-  padding: 0.55rem 0.75rem;
+  padding: 0.6rem 0.85rem;
   font-size: 0.88rem;
-  border-radius: 5px;
+  border-radius: 6px;
   border: 1px solid var(--admin-border);
 }
 
 .admin-integration-card .admin-btn-secondary {
-  padding: 0.45rem 0.85rem;
-  font-size: 0.8rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.82rem;
   font-weight: 600;
-  border-radius: 5px;
+  border-radius: 6px;
 }
 
 .test-result-box {
@@ -821,3 +943,1756 @@
   color: #854D0E;
   border: 1px solid #FACC15;
 }
+
+/* ====================================================================
+   5. ARTICLE MEDIA, THUMBNAIL & CUSTOM CATEGORY STYLES
+==================================================================== */
+.admin-media-box {
+  background: #F9FAFB;
+  border: 1px solid var(--admin-border);
+  border-radius: 6px;
+  padding: 1.25rem;
+  margin: 1.5rem 0;
+}
+
+.admin-media-box-header {
+  border-bottom: 1px solid #E5E7EB;
+  padding-bottom: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.admin-media-subcard {
+  background: var(--admin-white);
+  border: 1px solid var(--admin-border);
+  border-radius: 5px;
+  padding: 1.15rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.admin-btn-text-danger {
+  background: none;
+  border: none;
+  color: #DC2626;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+  transition: color 0.15s ease;
+}
+
+.admin-btn-text-danger:hover {
+  color: #991B1B;
+}
+
+.admin-link-btn {
+  background: none;
+  border: none;
+  color: var(--admin-orange);
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  transition: opacity 0.15s ease;
+}
+
+.admin-link-btn:hover {
+  opacity: 0.85;
+}
+
+.admin-category-creator-box {
+  background: #FFFBEB;
+  border: 1px solid #FCD34D;
+  border-radius: 4px;
+  padding: 0.75rem 1rem;
+  margin-top: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.admin-media-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 0.75rem;
+  max-height: 280px;
+  overflow-y: auto;
+  padding: 0.5rem;
+  background: #F3F4F6;
+  border: 1px solid #E5E7EB;
+  border-radius: 4px;
+  margin-top: 0.75rem;
+}
+
+.admin-media-picker-item {
+  cursor: pointer;
+  border: 2px solid transparent;
+  border-radius: 4px;
+  overflow: hidden;
+  aspect-ratio: 1;
+  background: #FFF;
+  position: relative;
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+.admin-media-picker-item:hover {
+  transform: scale(1.03);
+  border-color: var(--admin-orange);
+}
+
+.admin-media-picker-item.selected {
+  border-color: var(--admin-orange);
+  box-shadow: 0 0 0 2px rgba(255, 98, 0, 0.3);
+}
+
+.admin-media-picker-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* ── Website Content Universal Section Editor Styles ── */
+.admin-content-subtabs {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.75rem 1.75rem;
+  background: #F9FAFB;
+  border-bottom: 1px solid var(--admin-border);
+  flex-wrap: wrap;
+}
+
+.admin-content-subtab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.5rem 0.95rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  border-radius: 4px;
+  border: 1px solid var(--admin-border);
+  background: #FFFFFF;
+  color: var(--admin-black);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.admin-content-subtab-btn:hover {
+  border-color: var(--admin-orange);
+  color: var(--admin-orange);
+}
+
+.admin-content-subtab-btn.active {
+  background: var(--admin-orange);
+  color: #FFFFFF;
+  border-color: var(--admin-orange);
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.15);
+}
+
+.admin-section-hint-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #FFFBEB;
+  border: 1px solid #FDE68A;
+  border-radius: 6px;
+  padding: 0.85rem 1.25rem;
+  margin-bottom: 1.5rem;
+  font-size: 0.85rem;
+  color: #92400E;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.admin-location-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-weight: 700;
+  color: #78350F;
+  background: #FEF3C7;
+  padding: 0.2rem 0.55rem;
+  border-radius: 4px;
+  border: 1px solid #FCD34D;
+}
+
+.admin-preview-box {
+  background: #FFFFFF;
+  border: 1px solid var(--admin-border);
+  border-radius: 6px;
+  padding: 1.5rem;
+  margin-top: 1.5rem;
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.04);
+}
+
+.admin-preview-title {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--admin-text-muted);
+  margin-bottom: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+/* ====================================================================
+   DEALDECK EXECUTIVE DASHBOARD OVERHAUL & ANIMATIONS
+   Layout, Typography & Visual Quality strictly aligned with reference
+==================================================================== */
+
+:root {
+  --admin-page-bg: #F4F5F9;
+  --admin-card-bg: #FFFFFF;
+  --admin-card-radius: 20px;
+  --admin-card-border: 1px solid #ECEEF2;
+  --admin-card-shadow: 0 4px 20px rgba(0, 0, 0, 0.025);
+  --admin-card-shadow-hover: 0 14px 32px rgba(0, 0, 0, 0.07);
+}
+
+.admin-body {
+  background-color: var(--admin-page-bg) !important;
+}
+
+/* ── 1. MODERN DEALDECK SIDEBAR ── */
+.admin-sidebar {
+  width: 260px !important;
+  background: #FFFFFF !important;
+  border-right: 1px solid #ECEEF2 !important;
+  box-shadow: 2px 0 12px rgba(0, 0, 0, 0.015);
+}
+
+.admin-sidebar-header {
+  height: 76px !important;
+  padding: 0 1.5rem !important;
+  border-bottom: 1px solid #ECEEF2 !important;
+}
+
+.admin-sidebar-brand {
+  gap: 0.85rem !important;
+}
+
+.dealdeck-logo-mark {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #FF6200 0%, #FF7824 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(255, 98, 0, 0.3);
+  color: #FFFFFF;
+  font-weight: 900;
+  font-size: 1.15rem;
+}
+
+.dealdeck-brand-name {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #111827;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.dealdeck-brand-sub {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--admin-orange);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.admin-sidebar-nav {
+  padding: 1.25rem 1rem !important;
+}
+
+.sidebar-section-label {
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #9CA3AF;
+  padding: 1.1rem 0.75rem 0.45rem 0.75rem;
+  display: block;
+}
+
+.sidebar-section-label:first-child {
+  padding-top: 0.2rem;
+}
+
+.admin-nav-item {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.85rem !important;
+  padding: 0.75rem 1rem !important;
+  border-radius: 12px !important;
+  color: #4B5563 !important;
+  font-size: 0.92rem !important;
+  font-weight: 600 !important;
+  margin-bottom: 0.35rem !important;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  border: none !important;
+  background: transparent !important;
+  cursor: pointer !important;
+}
+
+.admin-nav-item:hover {
+  background: #F9FAFB !important;
+  color: var(--admin-orange) !important;
+  transform: translateX(3px) !important;
+}
+
+.admin-nav-item.active {
+  background: var(--admin-orange, #FF6200) !important;
+  color: #FFFFFF !important;
+  font-weight: 700 !important;
+  box-shadow: 0 6px 18px rgba(255, 98, 0, 0.32) !important;
+  transform: none !important;
+}
+
+.admin-nav-item.active .admin-nav-icon {
+  filter: brightness(0) invert(1);
+}
+
+/* Sidebar Bottom Card (DealDeck Upgrade Pro style) */
+.sidebar-bottom-promo-card {
+  margin: 1rem;
+  padding: 1.25rem 1.15rem;
+  background: #18181B;
+  border-radius: 18px;
+  color: #FFFFFF;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.15);
+}
+
+.sidebar-bottom-promo-card::before {
+  content: '';
+  position: absolute;
+  top: -40px;
+  right: -40px;
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  background: rgba(255, 98, 0, 0.2);
+  filter: blur(20px);
+}
+
+.promo-card-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.75rem;
+  font-size: 0.95rem;
+}
+
+.promo-card-title {
+  font-size: 0.95rem;
+  font-weight: 800;
+  margin: 0 0 0.25rem 0;
+  color: #FFFFFF;
+}
+
+.promo-card-desc {
+  font-size: 0.75rem;
+  color: #A1A1AA;
+  line-height: 1.4;
+  margin: 0 0 0.85rem 0;
+}
+
+.promo-card-btn {
+  display: block;
+  width: 100%;
+  padding: 0.55rem;
+  text-align: center;
+  background: var(--admin-orange, #FF6200);
+  color: #FFFFFF;
+  font-size: 0.82rem;
+  font-weight: 700;
+  border-radius: 9999px;
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(255, 98, 0, 0.35);
+}
+
+.promo-card-btn:hover {
+  background: #FF7824;
+  transform: translateY(-1px);
+}
+
+/* ── 2. MODERN TOP HEADER ── */
+.admin-main {
+  margin-left: 260px !important;
+  background: var(--admin-page-bg) !important;
+}
+
+.admin-header {
+  height: 76px !important;
+  background: #FFFFFF !important;
+  border-bottom: 1px solid #ECEEF2 !important;
+  padding: 0 2.25rem !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.015);
+}
+
+.dealdeck-header-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.dealdeck-header-title {
+  font-size: 1.45rem;
+  font-weight: 800;
+  color: #111827;
+  letter-spacing: -0.02em;
+  margin: 0;
+  line-height: 1.15;
+}
+
+.dealdeck-header-date {
+  font-size: 0.82rem;
+  color: #6B7280;
+  font-weight: 500;
+}
+
+.dealdeck-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  flex-shrink: 0;
+}
+
+.header-icon-circle-btn {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: #F4F5F9;
+  border: 1px solid #E5E7EB;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  color: #4B5563;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.header-icon-circle-btn:hover {
+  background: #E5E7EB;
+  color: #111827;
+}
+
+.notification-badge-dot {
+  position: absolute;
+  top: 9px;
+  right: 9px;
+  width: 8px;
+  height: 8px;
+  background: #EF4444;
+  border-radius: 50%;
+  border: 2px solid #FFFFFF;
+}
+
+.dealdeck-user-pill {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.35rem 0.95rem 0.35rem 0.4rem;
+  background: #FFFFFF;
+  border-radius: 9999px;
+  border: 1px solid #E5E7EB;
+  margin-left: 0.35rem;
+  cursor: pointer;
+  flex-shrink: 0;
+  white-space: nowrap;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.dealdeck-user-pill:hover {
+  background: #FFFFFF;
+  border-color: #FF6200;
+  box-shadow: 0 4px 14px rgba(255, 98, 0, 0.15);
+  transform: translateY(-1px);
+}
+
+.dealdeck-user-avatar-wrap {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+.dealdeck-user-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #FFFFFF;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+  display: block;
+}
+
+.dealdeck-user-camera-badge {
+  position: absolute;
+  bottom: -1px;
+  right: -1px;
+  width: 14px;
+  height: 14px;
+  background: #FF6200;
+  color: #FFFFFF;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid #FFFFFF;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+.dealdeck-user-meta {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  white-space: nowrap;
+  line-height: 1.25;
+}
+
+.dealdeck-user-name {
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: #111827;
+  white-space: nowrap;
+}
+
+.dealdeck-user-role {
+  font-size: 0.72rem;
+  color: #6B7280;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* ── 3. EXECUTIVE 2-COLUMN DASHBOARD GRID ── */
+.dealdeck-dashboard-grid {
+  display: grid;
+  grid-template-columns: 1.65fr 1.15fr;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+/* ── 4. METRIC CARDS (2x2) ── */
+.dealdeck-metric-grid-2x2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.dealdeck-metric-card {
+  background: #FFFFFF;
+  border-radius: var(--admin-card-radius);
+  border: var(--admin-card-border);
+  padding: 1.45rem;
+  box-shadow: var(--admin-card-shadow);
+  display: flex;
+  flex-direction: column;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  animation: adminCardEnter 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.dealdeck-metric-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--admin-card-shadow-hover);
+}
+
+/* Hero Radiant Orange Card */
+.dealdeck-metric-card.card-hero-orange {
+  background: linear-gradient(135deg, #FF6200 0%, #FF7824 100%) !important;
+  color: #FFFFFF !important;
+  border: none !important;
+  box-shadow: 0 10px 28px rgba(255, 98, 0, 0.32) !important;
+}
+
+.dealdeck-card-top-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.15rem;
+}
+
+.dealdeck-card-icon-wrap {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: #F4F5F9;
+  border: 1px solid #E5E7EB;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+}
+
+.card-hero-orange .dealdeck-card-icon-wrap {
+  background: rgba(255, 255, 255, 0.22) !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+}
+
+.dealdeck-growth-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 0.22rem 0.6rem;
+  border-radius: 9999px;
+}
+
+.dealdeck-growth-pill.pill-green {
+  background: #DCFCE7;
+  color: #15803D;
+}
+
+.card-hero-orange .dealdeck-growth-pill.pill-green {
+  background: #FFFFFF !important;
+  color: #047857 !important;
+}
+
+.dealdeck-growth-pill.pill-red {
+  background: #FEE2E2;
+  color: #B91C1C;
+}
+
+.dealdeck-card-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #6B7280;
+  margin-bottom: 0.35rem;
+}
+
+.card-hero-orange .dealdeck-card-label {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.dealdeck-card-number {
+  font-size: 2rem;
+  font-weight: 800;
+  color: #111827;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  margin-bottom: 0.4rem;
+}
+
+.card-hero-orange .dealdeck-card-number {
+  color: #FFFFFF !important;
+}
+
+.dealdeck-card-subtext {
+  font-size: 0.75rem;
+  color: #9CA3AF;
+}
+
+.card-hero-orange .dealdeck-card-subtext {
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+/* ── 5. STAT CARDS COMMON (White Rounded 20px Cards) ── */
+.stat-card {
+  background: #FFFFFF;
+  border-radius: var(--admin-card-radius);
+  border: var(--admin-card-border);
+  padding: 1.65rem;
+  box-shadow: var(--admin-card-shadow);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: adminCardEnter 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.stat-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--admin-card-shadow-hover);
+}
+
+.stat-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+}
+
+.stat-card-title {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #111827;
+  margin: 0 0 0.25rem 0;
+  letter-spacing: -0.01em;
+}
+
+.stat-card-subtitle {
+  font-size: 0.78rem;
+  color: #6B7280;
+  margin: 0;
+}
+
+.stat-pill-select {
+  padding: 0.35rem 0.85rem;
+  background: #F4F5F9;
+  border: 1px solid #E5E7EB;
+  border-radius: 9999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #374151;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.stat-pill-select:hover {
+  background: #E5E7EB;
+}
+
+/* ── 6. CUSTOMER HABITS BAR CHART ── */
+.stat-habits-card {
+  margin-bottom: 1.5rem;
+}
+
+.stat-legend-row {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #4B5563;
+  margin-bottom: 1.25rem;
+}
+
+.stat-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.stat-legend-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+
+.dot-gray { background: #D1D5DB; }
+.dot-orange { background: var(--admin-orange, #FF6200); }
+.dot-white { background: #FFFFFF; }
+
+.stat-barchart-container {
+  display: flex;
+  align-items: flex-end;
+  height: 220px;
+  position: relative;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid #F3F4F6;
+}
+
+.stat-yaxis-labels {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 160px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #9CA3AF;
+  padding-right: 1.25rem;
+  text-align: right;
+  margin-bottom: 1.5rem;
+}
+
+.stat-bars-track {
+  flex: 1;
+  display: flex;
+  justify-content: space-around;
+  align-items: flex-end;
+  height: 160px;
+  margin-bottom: 1.5rem;
+  position: relative;
+}
+
+.stat-bar-group {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  position: relative;
+  cursor: pointer;
+  padding: 0 4px;
+}
+
+.stat-bar-pillar {
+  width: 14px;
+  border-radius: 8px;
+  transition: height 0.4s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s ease, opacity 0.2s ease;
+}
+
+.pillar-gray {
+  background: #E2E8F0;
+}
+
+.pillar-orange {
+  background: var(--admin-orange, #FF6200);
+}
+
+.stat-bar-group:hover .pillar-gray {
+  background: #CBD5E1;
+}
+
+.stat-bar-group:hover .pillar-orange {
+  background: #EA580C;
+  box-shadow: 0 4px 12px rgba(255, 98, 0, 0.4);
+}
+
+.stat-bar-month-label {
+  position: absolute;
+  bottom: -24px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #6B7280;
+}
+
+.stat-bar-group.active .stat-bar-month-label {
+  color: #111827;
+}
+
+/* Floating Black Speech-Bubble Tooltip */
+.stat-bar-tooltip {
+  position: absolute;
+  top: -68px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #18181B;
+  color: #FFFFFF;
+  padding: 0.55rem 0.85rem;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  pointer-events: none;
+  white-space: nowrap;
+  animation: adminTooltipPop 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.stat-tooltip-row {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.stat-tooltip-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+
+.stat-tooltip-arrow {
+  position: absolute;
+  bottom: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 6px solid #18181B;
+}
+
+/* ── 7. PRODUCT STATISTIC RADIAL GAUGE ── */
+.stat-product-card {
+  margin-bottom: 1.5rem;
+}
+
+.stat-gauge-wrap {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0.5rem 0 1rem;
+}
+
+.stat-gauge-svg-container {
+  width: 190px;
+  height: 190px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stat-radial-svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.stat-ring-bg {
+  fill: none;
+  stroke: #F1F3F7;
+}
+
+.stat-ring-active {
+  fill: none;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.ring-orange { stroke: var(--admin-orange, #FF6200); }
+.ring-red { stroke: #EF4444; }
+.ring-dark { stroke: #212121; }
+
+.stat-gauge-center-info {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.stat-gauge-num {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: #111827;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.stat-gauge-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #6B7280;
+  margin-top: 0.2rem;
+}
+
+.stat-growth-badge {
+  display: inline-block;
+  font-size: 0.68rem;
+  font-weight: 800;
+  padding: 0.15rem 0.45rem;
+  border-radius: 9999px;
+  margin-top: 0.35rem;
+}
+
+.stat-growth-badge.badge-green {
+  background: #DCFCE7;
+  color: #15803D;
+}
+
+.stat-breakdown-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  border-top: 1px solid #F3F4F6;
+  padding-top: 1rem;
+}
+
+.stat-breakdown-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.85rem;
+}
+
+.stat-breakdown-name {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  color: #374151;
+  font-weight: 600;
+}
+
+.stat-icon-bullet {
+  font-size: 1rem;
+}
+
+.stat-breakdown-val {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.stat-breakdown-val strong {
+  font-weight: 800;
+  color: #111827;
+}
+
+.stat-growth-pill {
+  font-size: 0.68rem;
+  font-weight: 800;
+  padding: 0.15rem 0.45rem;
+  border-radius: 9999px;
+}
+
+.pill-green { background: #DCFCE7; color: #15803D; }
+.pill-red { background: #FEE2E2; color: #B91C1C; }
+
+/* ── 8. CUSTOMER GROWTH METRICS & SPATIAL TRACKING ── */
+.stat-growth-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.stat-growth-summary-pills {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+}
+
+.stat-growth-pill-item {
+  background: #FFFFFF;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 10px;
+  padding: 0.85rem 0.65rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+}
+
+.stat-growth-pill-val {
+  font-family: var(--font-body, inherit);
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #212121;
+}
+
+.stat-growth-pill-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #71717A;
+  margin-top: 0.25rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.stat-country-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  border-top: 1px solid #F3F4F6;
+  padding-top: 1rem;
+}
+
+.stat-country-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.82rem;
+}
+
+.stat-country-name {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  color: #374151;
+  width: 120px;
+}
+
+.country-flag {
+  font-size: 1.1rem;
+}
+
+.stat-country-bar-wrap {
+  flex: 1;
+  height: 6px;
+  background: #F3F4F6;
+  border-radius: 9999px;
+  overflow: hidden;
+  margin: 0 0.85rem;
+}
+
+.stat-country-progress {
+  height: 100%;
+  background: var(--admin-orange, #FF6200);
+  border-radius: 9999px;
+  transition: width 0.6s ease;
+}
+
+.stat-country-pct {
+  font-weight: 700;
+  color: #6B7280;
+  font-size: 0.78rem;
+}
+
+/* ── 9. KEYFRAME ANIMATIONS ── */
+@keyframes adminCardEnter {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes adminTooltipPop {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 6px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1);
+  }
+}
+
+/* ── 10. RESPONSIVE DASHBOARD LAYOUT ── */
+@media (max-width: 1100px) {
+  .dealdeck-dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .admin-main {
+    margin-left: 0 !important;
+  }
+  .dealdeck-metric-grid-2x2 {
+    grid-template-columns: 1fr;
+  }
+  .admin-header {
+    padding: 0 1rem !important;
+  }
+  .dealdeck-header-title {
+    font-size: 1.2rem;
+  }
+}
+
+/* ── 11. DEALDECK UNIVERSAL NAVIGATION & TAB THEME SYSTEM ── */
+.dealdeck-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  background: #FFFFFF;
+  color: #111827;
+  border: 1.5px solid #E5E7EB;
+  padding: 0.45rem 0.95rem;
+  border-radius: 9999px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.dealdeck-back-btn:hover {
+  background: #FFF7ED;
+  border-color: #FF6200;
+  color: #FF6200;
+  transform: translateX(-3px);
+  box-shadow: 0 2px 6px rgba(255, 98, 0, 0.15);
+}
+
+.dealdeck-tab-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+@media (max-width: 1100px) {
+  .dealdeck-tab-metrics-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .dealdeck-tab-metrics-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.dealdeck-action-bar {
+  background: #FFFFFF;
+  border-radius: var(--admin-card-radius, 20px);
+  border: var(--admin-card-border, 1px solid #E5E7EB);
+  box-shadow: var(--admin-card-shadow, 0 4px 20px rgba(0, 0, 0, 0.04));
+  padding: 1.1rem 1.45rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.dealdeck-action-bar-left {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  flex-wrap: wrap;
+}
+
+.dealdeck-action-bar-right {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.dealdeck-search-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.dealdeck-search-wrap .search-icon {
+  position: absolute;
+  left: 0.85rem;
+  font-size: 0.85rem;
+  color: #9CA3AF;
+  pointer-events: none;
+}
+
+.dealdeck-search-input {
+  background: #F4F5F9;
+  border: 1px solid #E5E7EB;
+  border-radius: 9999px;
+  padding: 0.45rem 1rem 0.45rem 2.2rem;
+  font-size: 0.82rem;
+  color: #111827;
+  font-weight: 500;
+  width: 210px;
+  transition: all 0.2s ease;
+}
+
+.dealdeck-search-input:focus {
+  outline: none;
+  background: #FFFFFF;
+  border-color: #FF6200;
+  box-shadow: 0 0 0 3px rgba(255, 98, 0, 0.12);
+  width: 240px;
+}
+
+.dealdeck-filter-pills {
+  display: inline-flex;
+  align-items: center;
+  background: #F4F5F9;
+  padding: 0.25rem;
+  border-radius: 9999px;
+  gap: 0.2rem;
+  border: 1px solid #E5E7EB;
+}
+
+.dealdeck-filter-btn {
+  border: none;
+  background: transparent;
+  color: #6B7280;
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.35rem 0.8rem;
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.dealdeck-filter-btn:hover {
+  color: #111827;
+}
+
+.dealdeck-filter-btn.active {
+  background: #FFFFFF;
+  color: #111827;
+  font-weight: 700;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+.dealdeck-view-toggle {
+  display: inline-flex;
+  align-items: center;
+  background: #F4F5F9;
+  padding: 0.25rem;
+  border-radius: 9999px;
+  border: 1px solid #E5E7EB;
+  gap: 0.2rem;
+}
+
+.dealdeck-view-btn {
+  border: none;
+  background: transparent;
+  color: #6B7280;
+  font-size: 0.8rem;
+  padding: 0.35rem 0.65rem;
+  border-radius: 9999px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.dealdeck-view-btn.active {
+  background: #FFFFFF;
+  color: #111827;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+/* ── 12. DEALDECK PRODUCT CARDS GRID ── */
+.dealdeck-product-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+  gap: 1.35rem;
+  margin-top: 0.5rem;
+}
+
+.dealdeck-product-card {
+  background: #FFFFFF;
+  border-radius: var(--admin-card-radius, 20px);
+  border: var(--admin-card-border, 1px solid #E5E7EB);
+  box-shadow: var(--admin-card-shadow, 0 4px 20px rgba(0, 0, 0, 0.04));
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  animation: adminCardEnter 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.dealdeck-product-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+  border-color: #D1D5DB;
+}
+
+.dealdeck-product-cover-wrap {
+  width: 100%;
+  height: 200px;
+  background: #F4F5F9;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.dealdeck-product-cover-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.4s ease;
+}
+
+.dealdeck-product-card:hover .dealdeck-product-cover-img {
+  transform: scale(1.03);
+}
+
+.dealdeck-product-cat-tag {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  background: rgba(17, 24, 39, 0.85);
+  backdrop-filter: blur(8px);
+  color: #FFFFFF;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.25rem 0.6rem;
+  border-radius: 9999px;
+}
+
+.dealdeck-product-status-tag {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 0.25rem 0.6rem;
+  border-radius: 9999px;
+  backdrop-filter: blur(8px);
+}
+
+.dealdeck-product-status-tag.published {
+  background: rgba(220, 252, 231, 0.95);
+  color: #15803D;
+  border: 1px solid #BBF7D0;
+}
+
+.dealdeck-product-status-tag.draft {
+  background: rgba(254, 243, 199, 0.95);
+  color: #B45309;
+  border: 1px solid #FDE68A;
+}
+
+.dealdeck-product-body {
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.dealdeck-product-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 0.4rem;
+  line-height: 1.3;
+}
+
+.dealdeck-product-desc {
+  font-size: 0.8rem;
+  color: #6B7280;
+  line-height: 1.45;
+  margin-bottom: 1rem;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  flex: 1;
+}
+
+.dealdeck-product-meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 0.75rem;
+  border-top: 1px solid #F3F4F6;
+  margin-bottom: 0.95rem;
+}
+
+.dealdeck-product-price-pill {
+  font-size: 0.92rem;
+  font-weight: 800;
+  color: #111827;
+}
+
+.dealdeck-product-price-pill.free {
+  color: #15803D;
+  background: #DCFCE7;
+  padding: 0.2rem 0.6rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+}
+
+.dealdeck-product-format {
+  font-size: 0.72rem;
+  color: #9CA3AF;
+  font-weight: 600;
+}
+
+.dealdeck-product-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.dealdeck-product-btn-edit {
+  flex: 1;
+  background: #F4F5F9;
+  border: 1px solid #E5E7EB;
+  border-radius: 10px;
+  color: #111827;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: center;
+}
+
+.dealdeck-product-btn-edit:hover {
+  background: #111827;
+  color: #FFFFFF;
+}
+
+.dealdeck-product-btn-del {
+  background: #FEE2E2;
+  border: 1px solid #FECACA;
+  border-radius: 10px;
+  color: #DC2626;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 0.5rem 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.dealdeck-product-btn-del:hover {
+  background: #DC2626;
+  color: #FFFFFF;
+}
+
+/* ── 13. DEALDECK ARTICLE CARDS GRID ── */
+.dealdeck-article-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1.35rem;
+  margin-top: 0.5rem;
+}
+
+.dealdeck-article-card {
+  background: #FFFFFF;
+  border-radius: var(--admin-card-radius, 20px);
+  border: var(--admin-card-border, 1px solid #E5E7EB);
+  box-shadow: var(--admin-card-shadow, 0 4px 20px rgba(0, 0, 0, 0.04));
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  animation: adminCardEnter 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.dealdeck-article-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+  border-color: #D1D5DB;
+}
+
+.dealdeck-article-thumb-wrap {
+  width: 100%;
+  height: 180px;
+  background: #111827;
+  position: relative;
+  overflow: hidden;
+}
+
+.dealdeck-article-thumb-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.4s ease;
+}
+
+.dealdeck-article-card:hover .dealdeck-article-thumb-img {
+  transform: scale(1.04);
+}
+
+.dealdeck-article-video-pill {
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
+  background: rgba(255, 98, 0, 0.95);
+  color: #FFFFFF;
+  font-size: 0.68rem;
+  font-weight: 800;
+  padding: 0.25rem 0.55rem;
+  border-radius: 9999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  backdrop-filter: blur(8px);
+}
+
+.dealdeck-article-body {
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.dealdeck-article-top-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.55rem;
+}
+
+.dealdeck-article-cat {
+  background: #FFF7ED;
+  color: #FF6200;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.2rem 0.55rem;
+  border-radius: 9999px;
+  border: 1px solid #FFEDD5;
+}
+
+.dealdeck-article-date {
+  font-size: 0.74rem;
+  color: #9CA3AF;
+  font-weight: 500;
+}
+
+.dealdeck-article-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 0.4rem;
+  line-height: 1.35;
+}
+
+.dealdeck-article-summary {
+  font-size: 0.82rem;
+  color: #6B7280;
+  line-height: 1.45;
+  margin-bottom: 1rem;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  flex: 1;
+}
+
+.dealdeck-article-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 0.75rem;
+  border-top: 1px solid #F3F4F6;
+}
+
+.dealdeck-article-readtime {
+  font-size: 0.72rem;
+  color: #6B7280;
+  font-weight: 600;
+}
+
+/* ── 14. DEALDECK LEADS TABLE POLISH ── */
+.dealdeck-lead-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #FF6200, #FFA500);
+  color: #FFFFFF;
+  font-size: 0.85rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(255, 98, 0, 0.25);
+}
+
+.dealdeck-lead-source-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: #F4F5F9;
+  color: #374151;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.2rem 0.55rem;
+  border-radius: 9999px;
+  border: 1px solid #E5E7EB;
+}
+
+.dealdeck-lead-utm-tag {
+  display: inline-block;
+  background: #EFF6FF;
+  color: #1D4ED8;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.18rem 0.5rem;
+  border-radius: 9999px;
+  border: 1px solid #DBEAFE;
+}
+
+.dealdeck-lead-zoho-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.18rem 0.5rem;
+  border-radius: 9999px;
+}
+
+.dealdeck-lead-zoho-tag.synced {
+  background: #DCFCE7;
+  color: #15803D;
+  border: 1px solid #BBF7D0;
+}
+
+.dealdeck-lead-zoho-tag.pending {
+  background: #F3F4F6;
+  color: #6B7280;
+  border: 1px solid #E5E7EB;
+}
+
+/* ── 15. DEALDECK MEDIA ASSETS GRID ── */
+.dealdeck-media-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 1.25rem;
+  margin-top: 0.5rem;
+}
+
+.dealdeck-media-card {
+  background: #FFFFFF;
+  border-radius: var(--admin-card-radius, 20px);
+  border: var(--admin-card-border, 1px solid #E5E7EB);
+  box-shadow: var(--admin-card-shadow, 0 4px 20px rgba(0, 0, 0, 0.04));
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: adminCardEnter 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.dealdeck-media-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
+  border-color: #D1D5DB;
+}
+
+.dealdeck-media-thumb {
+  width: 100%;
+  height: 150px;
+  background: #F4F5F9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  position: relative;
+}
+
+.dealdeck-media-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.dealdeck-media-info {
+  padding: 0.95rem;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.dealdeck-media-filename {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #111827;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 0.25rem;
+}
+
+.dealdeck-media-meta {
+  font-size: 0.7rem;
+  color: #9CA3AF;
+  margin-bottom: 0.75rem;
+}
+
+.dealdeck-media-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: auto;
+}
+
+

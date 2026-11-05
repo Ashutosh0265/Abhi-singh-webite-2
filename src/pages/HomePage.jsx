@@ -1,51 +1,128 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import BookCover from '../components/BookCover';
 import CredentialPreview from '../components/CredentialPreview';
 import AboutGallery from '../components/AboutGallery';
 import { initialNewsletters } from '../data/newsletters';
-import { getPosts } from '../services/db';
+import { getPosts, getSiteContent, DEFAULT_SITE_CONTENT } from '../services/db';
 import DOMPurify from 'dompurify';
+import { parseMarkdownToHtml } from '../utils/markdown';
 import { submitNewsletterSignup } from '../utils/tracking';
 import useScrollReveal from '../hooks/useScrollReveal';
+import { ArticleVideoPlayer } from '../components/ArticleVideoPlayer';
+import {
+  formatArticleThumbnailUrl,
+  DEFAULT_BLOG_COVER,
+  calculateReadingTime,
+  formatPublicationDate,
+} from '../utils/mediaHelper';
+import {
+  EditableText,
+  EditableImage,
+  EditableVideo,
+  EditableButton,
+  EditableSection,
+} from '../components/live-editor';
 
 export default function HomePage({ onNavigate, onOpenCertificate }) {
   useScrollReveal([]);
+  const [content, setContent] = useState(DEFAULT_SITE_CONTENT);
   const [heroEmail, setHeroEmail] = useState('');
   const [footerEmail, setFooterEmail] = useState('');
   const [heroSignupStatus, setHeroSignupStatus] = useState(null);
   const [footerSignupStatus, setFooterSignupStatus] = useState(null);
   const [isSubmittingHero, setIsSubmittingHero] = useState(false);
   const [isSubmittingFooter, setIsSubmittingFooter] = useState(false);
-  const [posts, setPosts] = useState(initialNewsletters);
+  const [posts, setPosts] = useState(() =>
+    initialNewsletters.map((n) => ({
+      ...n,
+      date: formatPublicationDate(n.date),
+      readTime: calculateReadingTime(n.content, n.summary, n.readTime),
+    }))
+  );
   const [activeArticle, setActiveArticle] = useState(null);
-  const [visiblePostCount, setVisiblePostCount] = useState(4);
+  const [currentPage, setCurrentPage] = useState(1);
+  const POSTS_PER_PAGE = 9;
+
+  useEffect(() => {
+    const publishedCount = posts.filter((p) => (p.status || 'published') === 'published').length;
+    const total = Math.max(1, Math.ceil(publishedCount / POSTS_PER_PAGE));
+    if (currentPage > total) {
+      setCurrentPage(total);
+    }
+  }, [posts, currentPage]);
 
   useEffect(() => {
     let isMounted = true;
-    async function loadLivePosts() {
+    async function loadLiveData() {
       try {
-        const live = await getPosts(false);
-        if (isMounted && live && live.length > 0) {
-          const normalized = live.map((n) => ({
-            id: n.id,
-            title: n.title,
-            category: n.category || 'Framework',
-            date: n.published_date || n.date || 'October 2026',
-            readTime: n.read_time || n.readTime || '4 min read',
-            summary: n.summary || '',
-            content: n.content || '',
-            thumbnail: n.thumbnail_url || n.thumbnail || '/assets/author-photo.png',
-            status: n.status || 'published',
-            slug: n.slug,
-          }));
-          setPosts(normalized);
+        const [live, sc] = await Promise.all([
+          getPosts(false),
+          getSiteContent(),
+        ]);
+        if (isMounted) {
+          if (sc) setContent(sc);
+          if (live) {
+            const normalized = live.map((n) => {
+              const formattedDate = formatPublicationDate(n.published_date || n.date);
+              const calculatedReadTime = calculateReadingTime(n.content, n.summary, n.read_time || n.readTime);
+              return {
+                id: n.id,
+                title: n.title,
+                category: n.category || 'Framework',
+                date: formattedDate,
+                readTime: calculatedReadTime,
+                summary: n.summary || '',
+                content: n.content || '',
+                thumbnail: n.thumbnail_url || n.thumbnail || '',
+                video_url: n.video_url || n.videoUrl || '',
+                videoUrl: n.video_url || n.videoUrl || '',
+                status: n.status || 'published',
+                slug: n.slug,
+                featured: Boolean(n.featured),
+                featured_order: Number(n.featured_order !== undefined && n.featured_order !== null ? n.featured_order : 999),
+              };
+            });
+
+            // Sort featured posts first on homepage (by featured_order ascending)
+            const sorted = [...normalized].sort((a, b) => {
+              if (a.featured && !b.featured) return -1;
+              if (!a.featured && b.featured) return 1;
+              if (a.featured && b.featured) {
+                return a.featured_order - b.featured_order;
+              }
+              return 0;
+            });
+            setPosts(sorted);
+          }
         }
       } catch (err) {
-        console.warn('[HomePage] Failed fetching live posts, using static fallback:', err);
+        console.warn('[HomePage] Failed fetching live data, using fallback:', err);
       }
     }
-    loadLivePosts();
-    return () => { isMounted = false; };
+    loadLiveData();
+
+    // Real-time synchronization listeners (instant updates without reload)
+    const handleSync = () => loadLiveData();
+    window.addEventListener('elrx_data_changed', handleSync);
+    window.addEventListener('storage', handleSync);
+    window.addEventListener('focus', handleSync);
+
+    let bc = null;
+    try {
+      if ('BroadcastChannel' in window) {
+        bc = new BroadcastChannel('elrx_live_sync');
+        bc.onmessage = handleSync;
+      }
+    } catch {}
+
+    return () => {
+      isMounted = false;
+      window.removeEventListener('elrx_data_changed', handleSync);
+      window.removeEventListener('storage', handleSync);
+      window.removeEventListener('focus', handleSync);
+      if (bc) bc.close();
+    };
   }, []);
 
   const handleHeroSignup = async (e) => {
@@ -75,44 +152,69 @@ export default function HomePage({ onNavigate, onOpenCertificate }) {
       <div className="page-wrap">
 
         {/* ── 1. BOOK HERO SECTION ── */}
-        <section id="book" className="scroll-reveal">
+        <EditableSection id="book" sectionKey="home.hero" sectionLabel="Hero Book Section" className="scroll-reveal">
           <div className="book-section">
             {/* Left: Book Cover */}
-            <div className="book-cover-wrap reveal-left">
+            <div className="book-col reveal-left">
               <BookCover />
             </div>
 
             {/* Right: Book Content */}
             <div className="book-content reveal-right">
-              <h1>
-                Train your <span className="hero-highlight">strength, muscle</span><br />
-                &amp; endurance <span className="hero-highlight">every day</span>
+              <h1 className="hero-headline">
+                <EditableText
+                  as="span"
+                  contentKey="hero.line1"
+                  defaultValue="Train your"
+                  className="hero-line hero-highlight"
+                />{' '}
+                <span className="hero-line hero-highlight">
+                  <EditableText
+                    as="span"
+                    contentKey="hero.line2"
+                    defaultValue="strength, muscle"
+                    className="hero-highlight"
+                  />
+                </span>{' '}
+                <EditableText
+                  as="span"
+                  contentKey="hero.line3"
+                  defaultValue="& endurance every day"
+                  className="hero-line hero-highlight"
+                />
               </h1>
-              <p>
-                I'm an ordinary guy — sales professional, not an athlete — who figured out a simple kettlebell system that fits around a full life. 10 complexes. No programming headaches. No gym required. Just work that compounds.
-              </p>
-              <p>
-                <em>Eat. Lift. Run. x</em> is the system I built — and it's become the book I wish I'd had at 30. A framework for people who think in systems, not slogans.
-              </p>
+              <EditableText
+                as="p"
+                contentKey="hero.subheadline1"
+                defaultValue="I'm an ordinary guy - sales professional, not an athlete - who figured out a simple kettlebell system that fits around a full life. 10 complexes. No programming headaches. No gym required. Just work that compounds."
+              />
+              <EditableText
+                as="p"
+                contentKey="hero.subheadline2"
+                defaultValue="Eat. Lift. Run. x is the system I built - and it's become the book I wish I'd had at 30. A framework for people who think in systems, not slogans."
+              />
 
               <div className="book-cta-row">
                 {heroSignupStatus !== 'success' ? (
                   <form onSubmit={handleHeroSignup} className="signup-row book-signup">
                     <input
                       type="email"
-                      placeholder="Your Email Address"
+                      placeholder={content?.hero?.emailPlaceholder || "Your Email Address"}
                       value={heroEmail}
                       onChange={(e) => setHeroEmail(e.target.value)}
                       required
                     />
-                    <button type="submit" disabled={isSubmittingHero}>
-                      {isSubmittingHero ? 'Sending…' : 'Get the complexes →'}
-                    </button>
+                    <EditableButton
+                      buttonKey="hero.cta"
+                      defaultText="Get the complexes →"
+                      type="submit"
+                      disabled={isSubmittingHero}
+                    />
                   </form>
                 ) : (
                   <div
                     style={{
-                      border: '2px solid var(--black)',
+                      border: '1px solid #212121',
                       backgroundColor: 'var(--yellow)',
                       padding: '0.85rem 1.25rem',
                       borderRadius: '4px',
@@ -128,308 +230,373 @@ export default function HomePage({ onNavigate, onOpenCertificate }) {
               </div>
             </div>
           </div>
-        </section>
+        </EditableSection>
 
         {/* ── 2. WHAT'S INSIDE ── */}
-        <section className="whats-inside scroll-reveal" id="whats-inside">
-          <h2>What's inside</h2>
+        <EditableSection className="whats-inside scroll-reveal" id="whats-inside" sectionKey="home.whatsInside" sectionLabel="What's Inside Section">
+          <EditableText
+            as="h2"
+            contentKey="whatsInside.heading"
+            defaultValue="What's inside"
+          />
           <ul className="wi-list reveal-stagger">
             <li>
-              <strong>2 strength complexes</strong>
-              <span>Earth to Sky (crossing ladder, 2 bells or 1) and Sun and Shadow (3×3 rule, get-up flow, 1 bell)</span>
+              <EditableText as="strong" contentKey="whatsInside.point1Title" defaultValue="2 strength complexes" />
+              <EditableText as="span" contentKey="whatsInside.point1Desc" defaultValue="Earth to Sky (crossing ladder, 2 bells or 1) and Sun and Shadow (3×3 rule, get-up flow, 1 bell)" />
             </li>
             <li>
-              <strong>2 power complexes</strong>
-              <span>Thunderclap (dead-stop snatch chain, 1 bell) and Crouching Tiger (clean-to-squat + push press, 2 bells or 1)</span>
+              <EditableText as="strong" contentKey="whatsInside.point2Title" defaultValue="2 power complexes" />
+              <EditableText as="span" contentKey="whatsInside.point2Desc" defaultValue="Thunderclap (dead-stop snatch chain, 1 bell) and Crouching Tiger (clean-to-squat + push press, 2 bells or 1)" />
             </li>
             <li>
-              <strong>3 muscle complexes</strong>
-              <span>Turning Seasons (rotating reps, density format), Full Circle (drop sets, hypertrophy), and Still Water (single-leg work, joint durability)</span>
+              <EditableText as="strong" contentKey="whatsInside.point3Title" defaultValue="3 muscle complexes" />
+              <EditableText as="span" contentKey="whatsInside.point3Desc" defaultValue="Turning Seasons (rotating reps, density format), Full Circle (drop sets, hypertrophy), and Still Water (single-leg work, joint durability)" />
             </li>
             <li>
-              <strong>3 endurance complexes</strong>
-              <span>Mountain Stream (Pat Flynn 9-min template), Rising Tide (escalating density), and Banyan Roots (carry and hold finisher)</span>
+              <EditableText as="strong" contentKey="whatsInside.point4Title" defaultValue="3 endurance complexes" />
+              <EditableText as="span" contentKey="whatsInside.point4Desc" defaultValue="Mountain Stream (Pat Flynn 9-min template), Rising Tide (escalating density), and Banyan Roots (carry and hold finisher)" />
             </li>
             <li>
-              <strong>The Goal-Matching Matrix</strong>
-              <span>how to pick any complex for strength, power, hypertrophy, or stamina</span>
+              <EditableText as="strong" contentKey="whatsInside.point5Title" defaultValue="The Goal-Matching Matrix" />
+              <EditableText as="span" contentKey="whatsInside.point5Desc" defaultValue="how to pick any complex for strength, power, hypertrophy, or stamina" />
             </li>
             <li>
-              <strong>The 3-Day Rule</strong>
-              <span>how to structure these around running, work, and life without burning out</span>
+              <EditableText as="strong" contentKey="whatsInside.point6Title" defaultValue="The 3-Day Rule" />
+              <EditableText as="span" contentKey="whatsInside.point6Desc" defaultValue="how to structure these around running, work, and life without burning out" />
             </li>
           </ul>
           <div>
-            <a
-              href="#book"
+            <EditableButton
+              buttonKey="whatsInside.cta"
+              defaultText="Download The Free Program Now →"
+              defaultHref="#book"
               className="btn-primary-yellow"
               onClick={(e) => {
-                e.preventDefault();
-                window.scrollTo({ top: 0, behavior: 'smooth' });
+                if (!window.location.search.includes('edit=true')) {
+                  e.preventDefault();
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
               }}
-            >
-              Download The Free Program Now →
-            </a>
+            />
           </div>
-        </section>
+        </EditableSection>
 
         {/* ── 3. WHO IS ABHI SINGH / ABOUT ── */}
-        <section className="about-section scroll-reveal" id="about">
+        <EditableSection className="about-section scroll-reveal" id="about" sectionKey="home.about" sectionLabel="Who is Abhi Singh Section">
           <div className="about-bio reveal-left">
-            <h2>Who Is Abhi Singh?</h2>
-            <p>
-              Hola, I'm Abhi Singh. Sales and marketing professional turned fitness and lifestyle coach. I transformed myself and got to peak fitness and mental health at 35.
-            </p>
+            <EditableText
+              as="h2"
+              contentKey="about.heading"
+              defaultValue="Who Is Abhi Singh?"
+            />
+            <EditableText
+              as="p"
+              contentKey="about.p1"
+              defaultValue="Hola, I'm Abhi Singh. Sales and marketing professional turned fitness and lifestyle coach. I transformed myself and got to peak fitness and mental health at 35."
+            />
             <p>
               I completed{' '}
               <CredentialPreview
                 label="Yoddha Race"
                 imageSrc="/assets/yoddha-medal.jpg"
-                title="The Yoddha Race"
-                subtitle="Finisher Medal · The Ultimate Fitness Challenge"
+                title={content?.credentials?.yoddha?.title || 'The Yoddha Race'}
+                subtitle={content?.credentials?.yoddha?.subtitle || 'Finisher Medal · The Ultimate Fitness Challenge'}
                 onOpenModal={onOpenCertificate}
               />{' '}
               and{' '}
               <CredentialPreview
                 label="HYROX Mumbai"
                 imageSrc="/assets/hyrox-patch.jpg"
-                title="HYROX Mumbai"
-                subtitle="Official Open Singles Patch · 2026/2027"
+                title={content?.credentials?.hyrox?.title || 'HYROX Mumbai'}
+                subtitle={content?.credentials?.hyrox?.subtitle || 'Official Open Singles Patch · 2026/2027'}
                 onOpenModal={onOpenCertificate}
               />, trained consistently for 20 months without missed weeks, and earned my{' '}
               <CredentialPreview
                 label="ACE CPT certification"
                 imageSrc="/assets/ace-certificate.jpg"
-                title="American Council on Exercise"
-                subtitle="Certified Personal Trainer · NCCA Accredited"
+                title={content?.credentials?.ace?.title || 'American Council on Exercise'}
+                subtitle={content?.credentials?.ace?.subtitle || 'Certified Personal Trainer · NCCA Accredited'}
                 onOpenModal={onOpenCertificate}
               />{' '}
-              — the gold standard in exercise science and personal training.
+              - the gold standard in exercise science and personal training.
             </p>
-            <p>
-              This site is what I learned doing it. No guru posturing. No toxic gym culture. Read a few things, learn the mechanics, and then go train.
-            </p>
+            <EditableText
+              as="p"
+              contentKey="about.p3"
+              defaultValue="This site is what I learned doing it. No guru posturing. No toxic gym culture. Read a few things, learn the mechanics, and then go train."
+            />
           </div>
           <div className="about-photo-col reveal-right">
             <AboutGallery onOpenLightbox={onOpenCertificate} />
           </div>
-        </section>
+        </EditableSection>
 
         {/* ── 4. BLOG & ESSAYS SECTION ── */}
-        <section className="blog-section scroll-reveal" id="blog">
+        <EditableSection className="blog-section scroll-reveal" id="blog" sectionKey="home.blog" sectionLabel="Essays & Frameworks Section">
           <div className="section-header">
-            <span className="section-eyebrow">ESSAYS &amp; FRAMEWORKS</span>
-            <h2>From The Blog</h2>
-            <p className="section-subtext">
-              Practical, evidence-based essays on kettlebell mechanics, sustainable habits, and building lasting physical capacity.
-            </p>
+            <EditableText
+              as="span"
+              contentKey="blog.eyebrow"
+              defaultValue="ESSAYS & FRAMEWORKS"
+              className="section-eyebrow"
+            />
+            <EditableText
+              as="h2"
+              contentKey="blog.heading"
+              defaultValue="From The Blog"
+            />
+            <EditableText
+              as="p"
+              contentKey="blog.subtitle"
+              defaultValue="Practical, evidence-based essays on kettlebell mechanics, sustainable habits, and building lasting physical capacity."
+              className="section-subtext"
+            />
           </div>
 
-          <div className="blog-cards-grid reveal-stagger">
-            {posts.slice(0, visiblePostCount).map((post) => {
-              const rawThumb = post.thumbnail || post.thumbnail_url;
-              const thumbUrl = !rawThumb 
-                ? '/assets/author-photo.png' 
-                : (rawThumb.startsWith('http') || rawThumb.startsWith('/') ? rawThumb : '/' + rawThumb);
+          {(() => {
+            const publishedPosts = posts.filter((p) => (p.status || 'published') === 'published');
+            const totalPages = Math.max(1, Math.ceil(publishedPosts.length / POSTS_PER_PAGE));
+            const safeCurrentPage = Math.min(Math.max(1, currentPage), totalPages);
+            const startIndex = (safeCurrentPage - 1) * POSTS_PER_PAGE;
+            const currentPosts = publishedPosts.slice(startIndex, startIndex + POSTS_PER_PAGE);
 
-              return (
-                <article
-                  key={post.id}
-                  className="blog-card"
-                  onClick={() => setActiveArticle(post)}
-                  role="button"
-                  tabIndex={0}
-                  onKeyDown={(e) => e.key === 'Enter' && setActiveArticle(post)}
-                  aria-label={`Read essay: ${post.title}`}
-                >
-                  <div className="blog-card-media">
-                    <img 
-                      src={thumbUrl} 
-                      alt={post.title} 
-                      className="blog-card-img" 
-                      loading="lazy" 
-                      onError={(e) => { e.currentTarget.src = '/assets/author-photo.png'; }}
-                    />
-                    <span className="blog-card-category-badge">{post.category || 'Framework'}</span>
+            const handlePageChange = (newPage) => {
+              if (newPage < 1 || newPage > totalPages || newPage === safeCurrentPage) return;
+              setCurrentPage(newPage);
+
+              const blogElem = document.getElementById('blog');
+              if (blogElem) {
+                const rect = blogElem.getBoundingClientRect();
+                if (rect.top < 0 || rect.top > 250) {
+                  if (window.__lenis) {
+                    window.__lenis.scrollTo('#blog', { offset: -84, duration: 0.8 });
+                  } else {
+                    blogElem.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }
+                }
+              }
+            };
+
+            const getPaginationRange = (curr, total) => {
+              if (total <= 7) {
+                return Array.from({ length: total }, (_, i) => i + 1);
+              }
+              if (curr <= 4) {
+                return [1, 2, 3, 4, 5, '...', total];
+              }
+              if (curr >= total - 3) {
+                return [1, '...', total - 4, total - 3, total - 2, total - 1, total];
+              }
+              return [1, '...', curr - 1, curr, curr + 1, '...', total];
+            };
+
+            const pageRange = getPaginationRange(safeCurrentPage, totalPages);
+
+            return (
+              <>
+                <div className="blog-cards-grid reveal-stagger">
+                  {currentPosts.length === 0 ? (
+                    <div
+                      className="blog-empty-state"
+                      style={{
+                        gridColumn: '1 / -1',
+                        textAlign: 'center',
+                        padding: '3rem 1rem',
+                        color: 'var(--text-color)',
+                        opacity: 0.75,
+                      }}
+                    >
+                      <p style={{ fontSize: '1rem', fontFamily: 'var(--font-body)' }}>No published articles found.</p>
+                    </div>
+                  ) : (
+                    currentPosts.map((post) => {
+                      const thumbUrl = formatArticleThumbnailUrl(post.thumbnail || post.thumbnail_url);
+                      const displayDate = formatPublicationDate(post.date || post.published_date);
+                      const displayReadTime = calculateReadingTime(post.content, post.summary, post.readTime || post.read_time);
+
+                      return (
+                        <article
+                          key={post.id}
+                          className="blog-card"
+                          onClick={() => setActiveArticle(post)}
+                          role="button"
+                          tabIndex={0}
+                          onKeyDown={(e) => e.key === 'Enter' && setActiveArticle(post)}
+                          aria-label={`Read essay: ${post.title}`}
+                        >
+                          <div className="blog-card-media">
+                            <img 
+                              src={thumbUrl} 
+                              alt={post.title} 
+                              className="blog-card-img" 
+                              loading="lazy" 
+                              onError={(e) => { e.currentTarget.src = DEFAULT_BLOG_COVER; }}
+                            />
+                            <span className="blog-card-category-badge">{post.category || 'Framework'}</span>
+                            {(post.video_url || post.videoUrl) && (
+                              <span className="blog-card-video-badge" aria-label="Video essay">
+                                <span className="video-icon" aria-hidden="true">▶</span> Video
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="blog-card-content">
+                            <div className="blog-card-meta-line">
+                              <span className="blog-card-date">{displayDate}</span>
+                              <span className="blog-card-divider" aria-hidden="true">·</span>
+                              <span className="blog-card-readtime">{displayReadTime}</span>
+                            </div>
+
+                            <h3 className="blog-card-title">{post.title}</h3>
+
+                            <p className="blog-card-summary">
+                              {post.summary || ''}
+                            </p>
+
+                            <div className="blog-card-action">
+                              <span className="blog-card-link-text">Read Full Essay →</span>
+                            </div>
+                          </div>
+                        </article>
+                      );
+                    })
+                  )}
+                </div>
+
+                {/* Google-Style Dynamic Numbered Pagination */}
+                <div className="blog-pagination-wrap" role="navigation" aria-label="Blog articles pagination">
+                  <button
+                    type="button"
+                    className="blog-pagination-nav-btn blog-pagination-prev"
+                    onClick={() => handlePageChange(safeCurrentPage - 1)}
+                    disabled={safeCurrentPage <= 1}
+                    aria-label="Previous Page"
+                  >
+                    ← Previous
+                  </button>
+
+                  <div className="blog-pagination-numbers">
+                    {pageRange.map((pageItem, idx) => {
+                      if (pageItem === '...') {
+                        return (
+                          <span key={`ellipsis-${idx}`} className="blog-pagination-ellipsis" aria-hidden="true">
+                            …
+                          </span>
+                        );
+                      }
+                      return (
+                        <button
+                          key={`page-${pageItem}`}
+                          type="button"
+                          className={`blog-pagination-num-btn ${safeCurrentPage === pageItem ? 'active' : ''}`}
+                          onClick={() => handlePageChange(pageItem)}
+                          aria-current={safeCurrentPage === pageItem ? 'page' : undefined}
+                          aria-label={`Page ${pageItem}`}
+                        >
+                          {pageItem}
+                        </button>
+                      );
+                    })}
                   </div>
 
-                  <div className="blog-card-content">
-                    <div className="blog-card-meta-line">
-                      <span className="blog-card-date">{post.date || post.published_date || 'October 2026'}</span>
-                      <span className="blog-card-divider">·</span>
-                      <span className="blog-card-readtime">{post.readTime || post.read_time || '4 min read'}</span>
-                    </div>
-
-                    <h3 className="blog-card-title">{post.title}</h3>
-
-                    <p className="blog-card-summary">
-                      {post.summary}
-                    </p>
-
-                    <div className="blog-card-action">
-                      <span className="blog-card-link-text">Read Full Essay →</span>
-                    </div>
-                  </div>
-                </article>
-              );
-            })}
-          </div>
-
-          {posts.length > 4 && (
-            <div className="blog-more-wrap">
-              <button
-                type="button"
-                className="btn-primary-yellow blog-more-btn"
-                onClick={() => setVisiblePostCount((prev) => (prev <= 4 ? posts.length : 4))}
-                aria-expanded={visiblePostCount > 4}
-              >
-                {visiblePostCount <= 4
-                  ? `Show More Articles (${posts.length - 4} more) ↓`
-                  : 'Show Fewer Articles ↑'}
-              </button>
-            </div>
-          )}
-        </section>
+                  <button
+                    type="button"
+                    className="blog-pagination-nav-btn blog-pagination-next"
+                    onClick={() => handlePageChange(safeCurrentPage + 1)}
+                    disabled={safeCurrentPage >= totalPages}
+                    aria-label="Next Page"
+                  >
+                    Next →
+                  </button>
+                </div>
+              </>
+            );
+          })()}
+        </EditableSection>
 
         {/* ── 5. WHAT I AM WORKING ON NOW ── */}
-        <section className="working-on scroll-reveal">
-          <h2>What I am working on now</h2>
+        <EditableSection className="working-on scroll-reveal" sectionKey="home.workingOn" sectionLabel="What I Am Working On Section">
+          <EditableText
+            as="h2"
+            contentKey="workingOn.heading"
+            defaultValue="What I am working on now"
+          />
           <ul className="working-list reveal-stagger">
             <li>
-              <div className="item-label">The Book</div>
-              <div className="item-title">Eat. Lift. Run. x</div>
-              <div className="item-desc">
-                The system I used to go from unfit to completing HYROX and Yoddha Race — written so you can follow it without guessing. Building in public.
-              </div>
+              <EditableText as="div" contentKey="workingOn.bookLabel" defaultValue="The Book" className="item-label" />
+              <EditableText as="div" contentKey="workingOn.bookTitle" defaultValue="Eat. Lift. Run. x" className="item-title" />
+              <EditableText
+                as="div"
+                contentKey="workingOn.bookDesc"
+                defaultValue="The system I used to go from unfit to completing HYROX and Yoddha Race - written so you can follow it without guessing. Building in public."
+                className="item-desc"
+              />
               <div>
-                <a
-                  href="#book"
+                <EditableButton
+                  buttonKey="workingOn.bookCta"
+                  defaultText="Get early access →"
+                  defaultHref="#book"
                   onClick={(e) => {
-                    e.preventDefault();
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                    if (!window.location.search.includes('edit=true')) {
+                      e.preventDefault();
+                      const bookEl = document.getElementById('book');
+                      if (bookEl) {
+                        bookEl.scrollIntoView({ behavior: 'smooth' });
+                      } else {
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }
+                    }
                   }}
-                >
-                  Get early access →
-                </a>
+                />
               </div>
             </li>
             <li>
-              <div className="item-label">The Newsletter</div>
-              <div className="item-title">E.L.R.x Weekly</div>
-              <div className="item-desc">
-                1,000+ millennials. One story from my training life, one thing you can use this week. No schedule — sent when it's worth sending.
-              </div>
+              <EditableText as="div" contentKey="workingOn.newsLabel" defaultValue="The Newsletter" className="item-label" />
+              <EditableText as="div" contentKey="workingOn.newsTitle" defaultValue="E.L.R.x Weekly" className="item-title" />
+              <EditableText
+                as="div"
+                contentKey="workingOn.newsDesc"
+                defaultValue="1,000+ millennials. One story from my training life, one thing you can use this week. No schedule - sent when it's worth sending."
+                className="item-desc"
+              />
               <div>
-                <a
-                  href="#newsletter"
+                <EditableButton
+                  buttonKey="workingOn.newsCta"
+                  defaultText="Join here →"
+                  defaultHref="#newsletter"
                   onClick={(e) => {
-                    e.preventDefault();
-                    document.getElementById('newsletter')?.scrollIntoView({ behavior: 'smooth' });
+                    if (!window.location.search.includes('edit=true')) {
+                      e.preventDefault();
+                      document.getElementById('newsletter')?.scrollIntoView({ behavior: 'smooth' });
+                    }
                   }}
-                >
-                  Join here →
-                </a>
+                />
               </div>
             </li>
           </ul>
-        </section>
-
-        {/* ── 5. START HERE / CONTENT ── */}
-        <section className="start-here scroll-reveal" id="content">
-          <h2>Welcome to my world</h2>
-          <ul className="start-here-list reveal-stagger" style={{ marginTop: '1.25rem' }}>
-            <li>
-              <span className="num">1.</span>
-              <a
-                href="#blog"
-                onClick={(e) => {
-                  e.preventDefault();
-                  const found = posts.find((p) => p.slug?.includes('what-is-elrx') || p.id === 'edition-5') || posts[0];
-                  setActiveArticle(found);
-                }}
-              >
-                What is E.L.R.x — and is it for you?
-              </a>
-            </li>
-            <li>
-              <span className="num">2.</span>
-              <a
-                href="#blog"
-                onClick={(e) => {
-                  e.preventDefault();
-                  const found = posts.find((p) => p.slug?.includes('zero-to-hyrox') || p.id === 'edition-4') || posts[1];
-                  setActiveArticle(found);
-                }}
-              >
-                How I went from zero to HYROX in 20 months
-              </a>
-            </li>
-            <li>
-              <span className="num">3.</span>
-              <a
-                href="#blog"
-                onClick={(e) => {
-                  e.preventDefault();
-                  const found = posts.find((p) => p.slug?.includes('fat-loss') || p.id === 'edition-3') || posts[2];
-                  setActiveArticle(found);
-                }}
-              >
-                The only 3 things that actually drive fat loss
-              </a>
-            </li>
-            <li>
-              <span className="num">4.</span>
-              <a
-                href="#blog"
-                onClick={(e) => {
-                  e.preventDefault();
-                  const found = posts.find((p) => p.slug?.includes('workout') || p.id === 'edition-2') || posts[3];
-                  setActiveArticle(found);
-                }}
-              >
-                Why your workout isn't working (and the fix)
-              </a>
-            </li>
-            <li>
-              <span className="num">5.</span>
-              <a
-                href="#blog"
-                onClick={(e) => {
-                  e.preventDefault();
-                  const found = posts.find((p) => p.slug?.includes('habit') || p.id === 'edition-1') || posts[4];
-                  setActiveArticle(found);
-                }}
-              >
-                How to build a habit that doesn't break
-              </a>
-            </li>
-          </ul>
-          <div style={{ fontSize: '0.98rem', marginTop: '1.25rem' }}>
-            <a
-              href="#store"
-              onClick={(e) => {
-                e.preventDefault();
-                onNavigate('store');
-              }}
-            >
-              Check out all the resources here →
-            </a>
-          </div>
-        </section>
+        </EditableSection>
 
       </div>{/* /page-wrap */}
 
       {/* ── 6. FOOTER SIGNUP ── */}
-      <section className="footer-signup scroll-reveal" id="newsletter">
+      <EditableSection className="footer-signup scroll-reveal" id="newsletter" sectionKey="home.newsletter" sectionLabel="Newsletter Signup Section">
         <div className="page-wrap">
           <div className="footer-signup-text reveal-left">
             <h2>
               <em>Free</em><br />
-              E.L.R.x Newsletter
+              <EditableText
+                as="span"
+                contentKey="newsletter.heading"
+                defaultValue="E.L.R.x Newsletter"
+                className="footer-newsletter-underline"
+              />
             </h2>
-            <p className="sub">
-              Join 1,000+ millennials. One story from my journey, one thing you can apply this week. Sent when it's worth sending.
-            </p>
+            <EditableText
+              as="p"
+              contentKey="newsletter.sub"
+              defaultValue="Join 1,000+ millennials. One story from my journey, one thing you can apply this week. Sent when it's worth sending."
+              className="sub"
+            />
           </div>
           <div className="footer-signup-cta reveal-right">
             {footerSignupStatus !== 'success' ? (
@@ -441,14 +608,17 @@ export default function HomePage({ onNavigate, onOpenCertificate }) {
                   onChange={(e) => setFooterEmail(e.target.value)}
                   required
                 />
-                <button type="submit" disabled={isSubmittingFooter}>
-                  {isSubmittingFooter ? 'Submitting…' : 'Sign me up →'}
-                </button>
+                <EditableButton
+                  buttonKey="newsletter.cta"
+                  defaultText="Sign me up →"
+                  type="submit"
+                  disabled={isSubmittingFooter}
+                />
               </form>
             ) : (
               <div
                 style={{
-                  border: '2px solid var(--black)',
+                  border: '1px solid var(--black)',
                   backgroundColor: 'var(--yellow)',
                   padding: '0.85rem 1.25rem',
                   borderRadius: '4px',
@@ -459,16 +629,18 @@ export default function HomePage({ onNavigate, onOpenCertificate }) {
                 ✓ You're signed up! Check your inbox for confirmation.
               </div>
             )}
-            <p className="hero-tagline">
-              No fluff. No toxic gym culture.<br />
-              Just what works. 🔥
-            </p>
+            <EditableText
+              as="p"
+              contentKey="newsletter.tagline"
+              defaultValue="No fluff. No toxic gym culture. Just what works. 🔥"
+              className="hero-tagline"
+            />
           </div>
         </div>
-      </section>
+      </EditableSection>
 
-      {/* ── INTERACTIVE ARTICLE READER MODAL (INLINE ON HOMEPAGE) ── */}
-      {activeArticle && (
+      {/* ── ARTICLE READER MODAL (EDITORIAL SCANNABLE FORMAT) ── */}
+      {activeArticle && typeof document !== 'undefined' && createPortal(
         <div
           className="modal-backdrop"
           onClick={() => setActiveArticle(null)}
@@ -481,18 +653,6 @@ export default function HomePage({ onNavigate, onOpenCertificate }) {
             className="modal-box modal-box-reader"
             onClick={(e) => e.stopPropagation()}
             data-lenis-prevent
-            style={{
-              maxWidth: '720px',
-              width: '95%',
-              maxHeight: '86vh',
-              overflowY: 'auto',
-              textAlign: 'left',
-              background: 'var(--white)',
-              border: '2px solid var(--black)',
-              boxShadow: '6px 6px 0 var(--yellow)',
-              padding: '24px',
-              position: 'relative',
-            }}
           >
             <button
               className="modal-close-btn"
@@ -502,58 +662,44 @@ export default function HomePage({ onNavigate, onOpenCertificate }) {
               ✕
             </button>
 
-            <div style={{ marginBottom: '1rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
-                <span
-                  style={{
-                    background: 'var(--yellow)',
-                    color: 'var(--text-color)',
-                    fontSize: 'var(--text-eyebrow)',
-                    fontWeight: 700,
-                    letterSpacing: '0.08em',
-                    textTransform: 'uppercase',
-                    padding: '0.2rem 0.6rem',
-                    border: '1.5px solid var(--black)',
-                    borderRadius: '3px',
-                  }}
-                >
+            <div className="modal-reader-header">
+              <div className="modal-reader-meta">
+                <span className="modal-reader-category">
                   {activeArticle.category || 'Framework'}
                 </span>
-                <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--orange)' }}>
-                  {activeArticle.readTime || activeArticle.read_time || '4 min read'} · {activeArticle.date || activeArticle.published_date || 'October 2026'}
+                <span className="modal-reader-time">
+                  {activeArticle.readTime || activeArticle.read_time || '2 min read'} · {activeArticle.date || activeArticle.published_date || 'October 2026'}
                 </span>
               </div>
 
-              <h2
-                style={{
-                  fontFamily: 'var(--font-heading)',
-                  fontSize: 'var(--text-h2)',
-                  lineHeight: 'var(--line-height-heading)',
-                  letterSpacing: 'var(--letter-spacing-h2)',
-                  marginTop: 0,
-                  marginBottom: '0.75rem',
-                  color: 'var(--text-color)',
-                }}
-              >
+              <h2 className="modal-reader-title">
                 {activeArticle.title}
               </h2>
             </div>
 
-            {activeArticle.thumbnail && (
-              <div style={{ marginBottom: '1.25rem', border: '2px solid var(--black)', borderRadius: '4px', overflow: 'hidden', maxHeight: '300px' }}>
-                <img
-                  src={activeArticle.thumbnail.startsWith('/') ? activeArticle.thumbnail : `/${activeArticle.thumbnail}`}
-                  alt={activeArticle.title}
-                  style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-                />
-              </div>
+            {/* Video Player or Thumbnail Banner */}
+            {(activeArticle.video_url || activeArticle.videoUrl) ? (
+              <ArticleVideoPlayer
+                videoUrl={activeArticle.video_url || activeArticle.videoUrl}
+                title={activeArticle.title}
+                style={{ marginBottom: '1.5rem' }}
+              />
+            ) : (
+              (activeArticle.thumbnail || activeArticle.thumbnail_url) && (
+                <div className="modal-reader-banner">
+                  <img
+                    src={formatArticleThumbnailUrl(activeArticle.thumbnail || activeArticle.thumbnail_url)}
+                    alt={activeArticle.title}
+                    onError={(e) => { e.currentTarget.src = DEFAULT_BLOG_COVER; }}
+                  />
+                </div>
+              )
             )}
 
             <div
               className="article-reader-content"
-              style={{ fontSize: 'var(--text-body)', lineHeight: 'var(--line-height-body)', color: 'var(--text-color)', maxWidth: 'var(--measure-prose)' }}
               dangerouslySetInnerHTML={{
-                __html: DOMPurify.sanitize(activeArticle.content, {
+                __html: DOMPurify.sanitize(parseMarkdownToHtml(activeArticle.content), {
                   ALLOWED_TAGS: [
                     'p', 'br', 'strong', 'b', 'em', 'i', 'u', 's', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
                     'ul', 'ol', 'li', 'blockquote', 'a', 'img', 'hr', 'code', 'pre', 'span', 'div'
@@ -564,47 +710,34 @@ export default function HomePage({ onNavigate, onOpenCertificate }) {
               }}
             />
 
-            {/* Author Bio Box */}
-            <div
-              style={{
-                borderTop: '2px solid var(--black)',
-                marginTop: '2rem',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '1rem',
-                background: 'var(--yellow)',
-                padding: '1.25rem',
-                borderRadius: '4px',
-                border: '2px solid var(--black)',
-              }}
-            >
-              <img
-                src="/assets/author-photo.png"
-                alt="Abhi Singh"
-                style={{ width: '56px', height: '56px', borderRadius: '4px', border: '2px solid var(--black)', objectFit: 'cover' }}
-              />
-              <div>
-                <strong style={{ display: 'block', fontSize: '1.1rem', fontFamily: 'var(--font-heading)', color: 'var(--text-color)' }}>
-                  Written by Abhi Singh
-                </strong>
-                <span style={{ fontSize: '0.92rem', color: 'var(--text-color)' }}>
-                  ACE Certified Personal Trainer · Creator of Eat. Lift. Run. x
-                </span>
+            {/* Clean, Minimal Author Footer */}
+            <div className="modal-author-box">
+              <div className="modal-author-info">
+                <img
+                  src="/assets/author-photo.png"
+                  alt="Abhi Singh"
+                  className="modal-author-avatar"
+                />
+                <div>
+                  <strong className="modal-author-name">
+                    Written by Abhi Singh
+                  </strong>
+                  <span className="modal-author-bio">
+                    ACE Certified Personal Trainer · Creator of Eat. Lift. Run. x
+                  </span>
+                </div>
               </div>
-            </div>
-
-            <div style={{ marginTop: '1.5rem', textAlign: 'right' }}>
               <button
                 type="button"
-                className="btn-primary-yellow"
-                style={{ width: 'auto', padding: '0.55rem 1.5rem', fontSize: '0.85rem' }}
+                className="modal-reader-close-action"
                 onClick={() => setActiveArticle(null)}
               >
                 Close Essay
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

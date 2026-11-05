@@ -61,6 +61,9 @@ const {
   createPost,
   updatePost,
   deletePost,
+  getCategories,
+  createCategory,
+  deleteCategory,
   getMediaAssets,
   uploadMediaAsset,
   deleteMediaAsset,
@@ -69,6 +72,7 @@ const {
   updateLeadStatus,
   getDashboardMetrics,
 } = await import('../src/services/db.js');
+const { getVideoInfo } = await import('../src/utils/mediaHelper.js');
 
 async function runTests() {
   console.log('====================================================');
@@ -237,13 +241,13 @@ async function runTests() {
       'Must reject .html'
     );
 
-    // Attempt uploading file exceeding 10MB
+    // Attempt uploading file exceeding 25MB
     await assert.rejects(
       async () => {
-        await uploadMediaAsset({ name: 'giant_file.jpg', size: 15 * 1024 * 1024, type: 'image/jpeg' });
+        await uploadMediaAsset({ name: 'giant_file.jpg', size: 30 * 1024 * 1024, type: 'image/jpeg' });
       },
       /exceeds maximum limit/i,
-      'Must reject files larger than 10MB'
+      'Must reject files larger than 25MB'
     );
 
     await adminLogout();
@@ -352,19 +356,67 @@ async function runTests() {
     const afterDelete = await getProducts(true);
     assert.strictEqual(afterDelete.length, initialCount);
 
-    // Blog CRUD
+    // Blog CRUD with Thumbnail, Video & Custom Category
     const post = await createPost({
       title: 'QA Security Protocol Article',
-      category: 'Framework',
+      category: 'Workouts',
       published_date: 'November 2026',
       read_time: '5 min read',
-      summary: 'Testing article pipeline',
-      content: '<p>Verified article pipeline.</p>',
+      summary: 'Testing article pipeline with thumbnail and video',
+      content: '<p>Verified article pipeline with media.</p>',
+      thumbnail_url: 'assets/hyrox-mumbai.png',
+      video_url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
       status: 'draft',
     });
     assert.ok(post.id);
+    assert.strictEqual(post.thumbnail, 'assets/hyrox-mumbai.png');
+    assert.strictEqual(post.thumbnail_url, 'assets/hyrox-mumbai.png');
+    assert.strictEqual(post.video_url, 'https://www.youtube.com/watch?v=dQw4w9WgXcQ');
+    assert.strictEqual(post.category, 'Workouts');
+
+    // Update with new video and thumbnail
+    const updatedPost = await updatePost(post.id, {
+      video_url: 'https://vimeo.com/76979871',
+      thumbnail_url: 'assets/hyrox-patch.jpg',
+    });
+    assert.strictEqual(updatedPost.video_url, 'https://vimeo.com/76979871');
+    assert.strictEqual(updatedPost.thumbnail_url, 'assets/hyrox-patch.jpg');
 
     await deletePost(post.id);
+    await adminLogout();
+  });
+
+  await testAsync('Custom Categories & Video URL parsing lifecycle', async () => {
+    // Authenticate
+    await adminLogin('abhi@abhisingh.me', 'Abhi@Admin2026!Secure');
+
+    // 1. Check default categories exist
+    const initialCats = await getCategories();
+    assert.ok(initialCats.includes('Framework'));
+    assert.ok(initialCats.includes('Endurance'));
+
+    // 2. Create custom category
+    const withCustom = await createCategory('Mobility & Recovery');
+    assert.ok(withCustom.includes('Mobility & Recovery'), 'New category must be present');
+
+    // 3. Delete custom category
+    const afterDelete = await deleteCategory('Mobility & Recovery');
+    assert.strictEqual(afterDelete.includes('Mobility & Recovery'), false, 'Category must be removed');
+
+    // 4. Video parser verification
+    const yt = getVideoInfo('https://www.youtube.com/watch?v=dQw4w9WgXcQ');
+    assert.strictEqual(yt.type, 'youtube');
+    assert.strictEqual(yt.id, 'dQw4w9WgXcQ');
+    assert.ok(yt.embedUrl.includes('embed/dQw4w9WgXcQ'));
+
+    const vimeo = getVideoInfo('https://vimeo.com/76979871');
+    assert.strictEqual(vimeo.type, 'vimeo');
+    assert.strictEqual(vimeo.id, '76979871');
+
+    const direct = getVideoInfo('https://example.com/demo.mp4');
+    assert.strictEqual(direct.type, 'direct');
+    assert.strictEqual(direct.directUrl, 'https://example.com/demo.mp4');
+
     await adminLogout();
   });
 

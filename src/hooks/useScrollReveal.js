@@ -8,17 +8,38 @@ export default function useScrollReveal(dependencies = []) {
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    if (!('IntersectionObserver' in window)) {
-      document.querySelectorAll('.scroll-reveal, .reveal-left, .reveal-right, .reveal-stagger, section').forEach((el) => {
+    const revealAll = () => {
+      document.querySelectorAll('section, .scroll-reveal, .reveal-left, .reveal-right, .reveal-stagger, .product-card').forEach((el) => {
         el.classList.add('is-revealed');
       });
-      return;
+    };
+
+    // If admin is active or editing, reveal everything immediately with zero delay
+    if (
+      document.body.classList.contains('has-admin-bar') ||
+      document.body.classList.contains('live-editing-active') ||
+      window.location.search.includes('edit=true') ||
+      window.location.hash.includes('edit')
+    ) {
+      revealAll();
+    }
+
+    const handleToggle = () => {
+      revealAll();
+    };
+    window.addEventListener('elrx_live_editor_toggled', handleToggle);
+
+    if (!('IntersectionObserver' in window)) {
+      revealAll();
+      return () => {
+        window.removeEventListener('elrx_live_editor_toggled', handleToggle);
+      };
     }
 
     const observerOptions = {
       root: null,
-      rootMargin: '0px 0px -60px 0px',
-      threshold: 0.12,
+      rootMargin: '0px 0px 40px 0px',
+      threshold: 0.05,
     };
 
     const handleIntersect = (entries, observer) => {
@@ -36,10 +57,12 @@ export default function useScrollReveal(dependencies = []) {
       'section, .scroll-reveal, .reveal-left, .reveal-right, .reveal-stagger, .product-card'
     );
 
+    const vpHeight = window.innerHeight || 800;
+
     elements.forEach((el) => {
       const rect = el.getBoundingClientRect();
-      // Only reveal if already in the upper viewport on initial load (hero)
-      if (rect.top >= 0 && rect.top < 350) {
+      // Only reveal if already in the viewport on initial load (or hero)
+      if (rect.top <= vpHeight || el.id === 'book' || el.closest('#book')) {
         el.classList.add('is-revealed');
       } else {
         // Observe so it animates when lazily scrolled into view
@@ -48,6 +71,7 @@ export default function useScrollReveal(dependencies = []) {
     });
 
     return () => {
+      window.removeEventListener('elrx_live_editor_toggled', handleToggle);
       observer.disconnect();
     };
   }, dependencies);

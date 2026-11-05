@@ -16,14 +16,19 @@ export const products = [
       "Day 3: Building a training calendar that never breaks"
     ],
     ctaText: "Get for FREE",
-    downloadUrl: "#free-habits-course"
+    file_url: "/assets/downloads/habits-for-physical-and-mental-strength.pdf",
+    file_name: "habits-for-physical-and-mental-strength.pdf",
+    downloadUrl: "/assets/downloads/habits-for-physical-and-mental-strength.pdf",
+    status: "published",
+    product_type: "digital_download"
   },
   {
     id: "boring-basics-book",
     name: "24 Boring Basics for Peak Fitness",
     type: "paid",
-    price: "₹99",
-    priceAmount: 99,
+    price: "₹499",
+    priceAmount: 499,
+    price_inr: 499,
     currency: "INR",
     category: "Book",
     format: "PDF (Digital Download)",
@@ -35,8 +40,12 @@ export const products = [
       "Hydration and metabolic energy protocols",
       "Simple weekly habit scorecard"
     ],
-    ctaText: "Get for ₹99",
-    downloadUrl: "#buy-boring-basics"
+    ctaText: "Get for ₹499",
+    file_url: "/assets/downloads/24-boring-basics-peak-fitness.pdf",
+    file_name: "24-boring-basics-peak-fitness.pdf",
+    downloadUrl: "/assets/downloads/24-boring-basics-peak-fitness.pdf",
+    status: "published",
+    product_type: "digital_download"
   },
   {
     id: "abhis-10-complexes",
@@ -44,6 +53,7 @@ export const products = [
     type: "paid",
     price: "₹499",
     priceAmount: 499,
+    price_inr: 499,
     currency: "INR",
     category: "Program",
     format: "Complete PDF Program + Matrix",
@@ -57,7 +67,11 @@ export const products = [
       "Complete Goal-Matching Table & Weight Selection Guide"
     ],
     ctaText: "Get for ₹499",
-    downloadUrl: "#buy-10-complexes"
+    file_url: "/assets/downloads/abhis-10-kettlebell-complexes.pdf",
+    file_name: "abhis-10-kettlebell-complexes.pdf",
+    downloadUrl: "/assets/downloads/abhis-10-kettlebell-complexes.pdf",
+    status: "published",
+    product_type: "digital_download"
   },
   {
     id: "follow-along-cycles",
@@ -65,6 +79,7 @@ export const products = [
     type: "paid",
     price: "₹3,999/mo",
     priceAmount: 3999,
+    price_inr: 3999,
     currency: "INR",
     category: "Subscription",
     format: "Video Workouts + Weekly Coaching",
@@ -77,7 +92,10 @@ export const products = [
       "Ongoing programming updates"
     ],
     ctaText: "Get for ₹3,999/mo",
-    downloadUrl: "#subscribe-cycles"
+    file_url: null,
+    downloadUrl: "#subscribe-cycles",
+    status: "published",
+    product_type: "course"
   },
   {
     id: "play-the-long-game-mobility",
@@ -96,7 +114,10 @@ export const products = [
       "Pre-complex warm-up sequences"
     ],
     ctaText: "Join the Waitlist",
-    downloadUrl: "#waitlist-mobility"
+    file_url: null,
+    downloadUrl: "#waitlist-mobility",
+    status: "draft",
+    product_type: "digital_download"
   },
   {
     id: "compound-lifts-foundations",
@@ -115,7 +136,10 @@ export const products = [
       "Load progression guidelines"
     ],
     ctaText: "Join the Waitlist",
-    downloadUrl: "#waitlist-compound"
+    file_url: null,
+    downloadUrl: "#waitlist-compound",
+    status: "draft",
+    product_type: "digital_download"
   },
   {
     id: "olympic-lifts-foundations",
@@ -134,6 +158,9 @@ export const products = [
       "Power transfer drills for speed and endurance"
     ],
     ctaText: "Join the Waitlist",
-    downloadUrl: "#waitlist-olympic"
+    file_url: null,
+    downloadUrl: "#waitlist-olympic",
+    status: "draft",
+    product_type: "digital_download"
   }
 ];

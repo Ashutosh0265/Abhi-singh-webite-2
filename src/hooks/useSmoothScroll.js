@@ -29,6 +29,9 @@ export default function useSmoothScroll(enabled = true) {
     lenisRef.current = lenis;
     window.__lenis = lenis;
 
+    // Immediately synchronize Lenis scroll position with actual window offset
+    lenis.scrollTo(window.scrollY, { immediate: true });
+
     let rafId;
     function raf(time) {
       lenis.raf(time);

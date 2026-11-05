@@ -6,7 +6,14 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "node --test test/cms-qa-suite.test.js test/homepage-pagination.test.js",
+    "test:sync": "node test/cms-live-sync.test.cjs",
+    "test:pagination": "node --test test/homepage-pagination.test.js && node test/homepage-pagination-e2e.test.cjs",
+    "test:live-edit": "node scripts/test-live-edit-lifecycle-e2e.cjs",
+    "test:store": "node test/store-purchase-and-site-restoration-e2e.test.cjs",
+    "test:delivery": "node test/digital-product-delivery-system.test.cjs",
+    "test:all": "node --test test/cms-qa-suite.test.js test/homepage-pagination.test.js && node test/cms-live-sync.test.cjs && node test/homepage-pagination-e2e.test.cjs && node scripts/test-live-edit-lifecycle-e2e.cjs && node test/store-purchase-and-site-restoration-e2e.test.cjs && node test/digital-product-delivery-system.test.cjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.118.0",

@@ -1,8 +1,32 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { EditableText, EditableImage } from './live-editor';
 
 export default function Navbar({ currentPage, onNavigate }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isCtaClicked, setIsCtaClicked] = useState(false);
+
+  // Close mobile drawer on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && mobileMenuOpen) {
+        setMobileMenuOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [mobileMenuOpen]);
+
+  // Prevent background scroll when mobile menu drawer is open
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [mobileMenuOpen]);
 
   const handleNavClick = (pageId, hash = '') => {
     onNavigate(pageId, hash);
@@ -31,23 +55,32 @@ export default function Navbar({ currentPage, onNavigate }) {
           }}
         >
           <div className="nav-avatar">
-            <img src="/assets/avatar.png" alt="Abhi Singh" />
+            <EditableImage
+              srcKey="nav.avatar"
+              defaultSrc="/assets/avatar.png"
+              altKey="nav.avatarAlt"
+              defaultAlt="Abhi Singh"
+            />
           </div>
           <div className="nav-byline">
-            <span className="nav-by">by</span>
-            <span className="nav-name">Abhi Singh</span>
+            <EditableText as="span" contentKey="nav.by" defaultValue="by" className="nav-by" />
+            <EditableText as="span" contentKey="nav.name" defaultValue="Abhi Singh" className="nav-name" />
           </div>
         </a>
 
-        {/* Mobile Hamburger Toggle Button */}
+        {/* Mobile Hamburger Toggle Button with Smooth Morphing Bars */}
         <button
           type="button"
-          className="mobile-menu-toggle"
+          className={`mobile-menu-toggle ${mobileMenuOpen ? 'is-active' : ''}`}
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           aria-label={mobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
           aria-expanded={mobileMenuOpen}
         >
-          <span className="hamburger-icon">{mobileMenuOpen ? '✕' : '☰'}</span>
+          <span className="hamburger-box" aria-hidden="true">
+            <span className="hamburger-bar hamburger-bar-top" />
+            <span className="hamburger-bar hamburger-bar-mid" />
+            <span className="hamburger-bar hamburger-bar-bot" />
+          </span>
         </button>
 
         {/* Navigation Links */}
@@ -60,19 +93,19 @@ export default function Navbar({ currentPage, onNavigate }) {
                 handleNavClick('home', 'content');
               }}
             >
-              Content
+              <EditableText as="span" contentKey="nav.content" defaultValue="Content" />
             </a>
           </li>
           <li>
             <a
               href="#newsletter"
-              className={currentPage === 'home' ? 'active' : ''}
+              className={currentPage === 'newsletter' || currentPage === 'archive' ? 'active' : ''}
               onClick={(e) => {
                 e.preventDefault();
                 handleNavClick('home', 'newsletter');
               }}
             >
-              Newsletter
+              <EditableText as="span" contentKey="nav.newsletter" defaultValue="Newsletter" />
             </a>
           </li>
           <li>
@@ -84,7 +117,7 @@ export default function Navbar({ currentPage, onNavigate }) {
                 handleNavClick('store');
               }}
             >
-              E.L.R.x Store
+              <EditableText as="span" contentKey="nav.store" defaultValue="E.L.R.x Store" />
             </a>
           </li>
           <li>
@@ -95,7 +128,7 @@ export default function Navbar({ currentPage, onNavigate }) {
                 handleNavClick('home', 'blog');
               }}
             >
-              Blog
+              <EditableText as="span" contentKey="nav.blog" defaultValue="Blog" />
             </a>
           </li>
           <li>
@@ -106,7 +139,7 @@ export default function Navbar({ currentPage, onNavigate }) {
                 handleNavClick('home', 'about');
               }}
             >
-              About
+              <EditableText as="span" contentKey="nav.about" defaultValue="About" />
             </a>
           </li>
           <li>
@@ -115,20 +148,18 @@ export default function Navbar({ currentPage, onNavigate }) {
               className={`nav-cta ${isCtaClicked ? 'clicked' : ''}`}
               onClick={handleWorkWithMe}
             >
-              Work With Me
+              <EditableText as="span" contentKey="nav.cta" defaultValue="Work With Me" />
             </button>
           </li>
         </ul>
       </div>
 
-      {/* Mobile Drawer Backdrop when open */}
-      {mobileMenuOpen && (
-        <div
-          className="mobile-nav-backdrop"
-          onClick={() => setMobileMenuOpen(false)}
-          aria-hidden="true"
-        />
-      )}
+      {/* Smoothly animated backdrop */}
+      <div
+        className={`mobile-nav-backdrop ${mobileMenuOpen ? 'active' : ''}`}
+        onClick={() => setMobileMenuOpen(false)}
+        aria-hidden="true"
+      />
     </nav>
   );
 }

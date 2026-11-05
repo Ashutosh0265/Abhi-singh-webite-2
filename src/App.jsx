@@ -10,6 +10,15 @@ import CertificateModal from './components/CertificateModal';
 import CheckoutModal from './components/CheckoutModal';
 import NewsletterPopup from './components/NewsletterPopup';
 import useSmoothScroll from './hooks/useSmoothScroll';
+import {
+  LiveEditorProvider,
+  LiveAdminToolbar,
+  FloatingTypographyToolbar,
+  WordPressPropertiesPanel,
+  InlineMediaModal,
+  PublishConfirmModal,
+} from './components/live-editor';
+import './components/live-editor/LiveEditor.css';
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState('home');
@@ -29,12 +38,14 @@ export default function App() {
         setCurrentPage('store');
       } else if (hash === 'work-with-me') {
         setCurrentPage('work-with-me');
+      } else if (hash === 'archive') {
+        setCurrentPage('archive');
       } else if (hash === 'admin') {
         setCurrentPage('admin');
       } else {
         setCurrentPage('home');
-        const targetSection = (hash === 'archive' || hash === 'blog' || hash.startsWith('edition-')) ? 'blog' : hash;
-        if (targetSection) {
+        const targetSection = (hash === 'blog' || hash === 'content' || hash.startsWith('edition-')) ? 'blog' : hash;
+        if (targetSection && targetSection !== 'book' && targetSection !== 'home') {
           setTimeout(() => {
             const el = document.getElementById(targetSection);
             if (el) {
@@ -58,7 +69,7 @@ export default function App() {
     setCurrentPage(pageId);
     if (pageId === 'home') {
       window.location.hash = sectionId ? `#${sectionId}` : '#';
-      if (sectionId) {
+      if (sectionId && sectionId !== 'book') {
         setTimeout(() => {
           const el = document.getElementById(sectionId);
           if (el) {
@@ -101,58 +112,68 @@ export default function App() {
   };
 
   return (
-    <div className="site-wrapper">
-      <Navbar currentPage={currentPage} onNavigate={handleNavigate} />
+    <LiveEditorProvider>
+      <div className="site-wrapper">
+        <LiveAdminToolbar />
 
-      <main key={currentPage} className="site-main page-transition-enter">
-        {currentPage === 'home' && (
-          <HomePage
-            onNavigate={handleNavigate}
-            onOpenProduct={handleOpenProduct}
-            onOpenCertificate={handleOpenCertificate}
-          />
-        )}
+        <Navbar currentPage={currentPage} onNavigate={handleNavigate} />
 
-        {currentPage === 'store' && (
-          <StorePage onOpenProduct={handleOpenProduct} />
-        )}
+        <main key={currentPage} className="site-main page-transition-enter">
+          {currentPage === 'home' && (
+            <HomePage
+              onNavigate={handleNavigate}
+              onOpenProduct={handleOpenProduct}
+              onOpenCertificate={handleOpenCertificate}
+            />
+          )}
 
-        {currentPage === 'work-with-me' && (
-          <WorkWithMePage />
-        )}
+          {currentPage === 'store' && (
+            <StorePage onOpenProduct={handleOpenProduct} />
+          )}
 
-        {currentPage === 'archive' && (
-          <NewsletterArchivePage
-            selectedEditionId={targetEditionId}
-            onSelectEdition={(id) => setTargetEditionId(id)}
-          />
-        )}
+          {currentPage === 'work-with-me' && (
+            <WorkWithMePage onNavigate={handleNavigate} />
+          )}
 
-        {currentPage === 'admin' && (
-          <AdminPage onNavigate={handleNavigate} />
-        )}
-      </main>
+          {currentPage === 'archive' && (
+            <NewsletterArchivePage
+              selectedEditionId={targetEditionId}
+              onSelectEdition={(id) => setTargetEditionId(id)}
+            />
+          )}
 
-      <Footer onNavigate={handleNavigate} />
+          {currentPage === 'admin' && (
+            <AdminPage onNavigate={handleNavigate} />
+          )}
+        </main>
 
-      {/* Global Interactive Modals */}
-      <CertificateModal
-        isOpen={isCertificateOpen}
-        item={activeCredentialItem}
-        onClose={() => {
-          setIsCertificateOpen(false);
-          setActiveCredentialItem(null);
-        }}
-      />
+        <Footer onNavigate={handleNavigate} />
 
-      <CheckoutModal
-        product={selectedProduct}
-        isOpen={Boolean(selectedProduct)}
-        onClose={() => setSelectedProduct(null)}
-      />
+        {/* Global Interactive Modals */}
+        <CertificateModal
+          isOpen={isCertificateOpen}
+          item={activeCredentialItem}
+          onClose={() => {
+            setIsCertificateOpen(false);
+            setActiveCredentialItem(null);
+          }}
+        />
 
-      <NewsletterPopup />
-    </div>
+        <CheckoutModal
+          product={selectedProduct}
+          isOpen={Boolean(selectedProduct)}
+          onClose={() => setSelectedProduct(null)}
+        />
+
+        <NewsletterPopup />
+
+        {/* Live Editing System Modals & Floating Toolbars */}
+        <FloatingTypographyToolbar />
+        <WordPressPropertiesPanel />
+        <InlineMediaModal />
+        <PublishConfirmModal />
+      </div>
+    </LiveEditorProvider>
   );
 }
 
