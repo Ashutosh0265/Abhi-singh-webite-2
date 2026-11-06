@@ -8,6 +8,7 @@ export default function EditableText({
   defaultValue = '',
   className = '',
   style = {},
+  allowMultiline = false,
   children,
   onClick,
   ...restProps
@@ -53,6 +54,7 @@ export default function EditableText({
 
   const mergedStyle = {
     ...style,
+    ...(allowMultiline ? { whiteSpace: 'pre-line' } : {}),
     ...(customTypography.fontFamily ? { fontFamily: customTypography.fontFamily } : {}),
     ...(customTypography.fontSize ? { fontSize: customTypography.fontSize } : {}),
     ...(customTypography.fontWeight ? { fontWeight: customTypography.fontWeight } : {}),
@@ -104,7 +106,7 @@ export default function EditableText({
       key: contentKey,
       label: `Text (${typeof EffectiveComponent === 'string' ? EffectiveComponent.toUpperCase() : 'TEXT'})`,
       styles: customTypography,
-      data: { text: displayText, ...customTypography },
+      data: { text: displayText, allowMultiline, ...customTypography },
     });
   };
 
@@ -122,8 +124,9 @@ export default function EditableText({
     if (!isAdmin || !isEditing || !contentKey) return;
     let newText = e.currentTarget.innerText;
     if (newText === '\n') newText = '';
-    lastUserTextRef.current = newText;
-    updateField(contentKey, newText);
+    const normalized = newText.replace(/\r\n/g, '\n');
+    lastUserTextRef.current = normalized;
+    updateField(contentKey, normalized);
   };
 
   // Phase 5: Formatting Inheritance & Clean Paste Handling
@@ -131,7 +134,7 @@ export default function EditableText({
     if (!isAdmin || !isEditing) return;
     e.preventDefault();
     const isHeading = typeof EffectiveComponent === 'string' && /^h[1-6]$/i.test(EffectiveComponent);
-    const isSingleLine = isHeading || EffectiveComponent === 'span' || EffectiveComponent === 'label';
+    const isSingleLine = !allowMultiline && (isHeading || EffectiveComponent === 'span' || EffectiveComponent === 'label');
 
     if (isSingleLine) {
       // Pasting into a heading or single-line element:
@@ -172,16 +175,27 @@ export default function EditableText({
 
     let updated = e.currentTarget.innerText;
     if (updated === '\n') updated = '';
-    lastUserTextRef.current = updated;
-    updateField(contentKey, updated);
+    const normalized = updated.replace(/\r\n/g, '\n');
+    lastUserTextRef.current = normalized;
+    updateField(contentKey, normalized);
   };
 
   const handleKeyDown = (e) => {
     if (!isAdmin || !isEditing) return;
     const isHeading = typeof EffectiveComponent === 'string' && /^h[1-6]$/i.test(EffectiveComponent);
-    const isSingleLine = isHeading || EffectiveComponent === 'span' || EffectiveComponent === 'label';
+    const isSingleLine = !allowMultiline && (isHeading || EffectiveComponent === 'span' || EffectiveComponent === 'label');
 
     if (e.key === 'Enter') {
+      if (allowMultiline) {
+        e.preventDefault();
+        document.execCommand('insertLineBreak');
+        let currentText = e.currentTarget.innerText;
+        if (currentText === '\n') currentText = '';
+        const normalized = currentText.replace(/\r\n/g, '\n');
+        lastUserTextRef.current = normalized;
+        updateField(contentKey, normalized);
+        return;
+      }
       if (isSingleLine && !e.shiftKey) {
         // Prevent creating messy nested <div> or <br> inside headings
         e.preventDefault();

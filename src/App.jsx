@@ -30,6 +30,60 @@ export default function App() {
   // Initialize Lenis lazy smooth inertia scrolling for all public pages
   useSmoothScroll(currentPage !== 'admin');
 
+  // Listen for Live Editor Modal Preview triggers
+  useEffect(() => {
+    const handlePreviewModal = (e) => {
+      const type = e?.detail?.modalType;
+      if (type === 'free') {
+        setSelectedProduct({
+          id: 'prod_habits_preview',
+          name: 'Habits for Physical and Mental Strength',
+          price: 'Free',
+          category: 'Free Download',
+          description: 'A comprehensive foundational system for building physical durability, mental resilience, and consistent daily habits.',
+          whatInside: [
+            'Daily morning mobility routines',
+            'Mindset shifts for consistent lifting',
+            'Nutritional recovery fundamentals',
+          ],
+          deliverable_pdf_url: '/pdfs/habits.pdf',
+        });
+      } else if (type === 'paid') {
+        setSelectedProduct({
+          id: 'prod_basics_preview',
+          name: '24 Boring Basics for Peak Fitness',
+          price: '₹499',
+          category: 'Digital PDF Guide',
+          description: '24 no-BS physical training fundamentals that strip away marketing hype and build genuine physical strength.',
+          whatInside: [
+            '24 core physical principles',
+            'Step-by-step kettlebell progression roadmap',
+            'Fatigue management for busy professionals',
+          ],
+          deliverable_pdf_url: '/pdfs/basics.pdf',
+        });
+      } else if (type === 'waitlist') {
+        setSelectedProduct({
+          id: 'prod_codex_preview',
+          name: 'Kettlebell Strength & Mobility Codex',
+          price: 'Coming Soon',
+          category: 'Upcoming Protocol',
+          description: 'A complete encyclopedia of single and double kettlebell movement progressions and joint durability exercises.',
+          is_coming_soon: true,
+          whatInside: [
+            'Exclusive early launch discount',
+            'Bonus warm-up protocol PDF',
+          ],
+        });
+      } else if (type === 'certificate') {
+        setIsCertificateOpen(true);
+      }
+    };
+
+    window.addEventListener('elrx_preview_modal', handlePreviewModal);
+    return () => window.removeEventListener('elrx_preview_modal', handlePreviewModal);
+  }, []);
+
   // Sync with window.location.hash
   useEffect(() => {
     const parseHash = () => {

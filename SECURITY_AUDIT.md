@@ -214,15 +214,15 @@ While all code-level vulnerabilities within the repository have been fixed and v
 
 The following files were modified or created to remediate vulnerabilities and verify application security:
 
-1. `src/pages/NewsletterArchivePage.jsx` — Implemented `DOMPurify` HTML sanitization to eliminate Stored XSS.
-2. `src/services/db.js` — Hardened authentication with PBKDF2 salted hashing, brute-force lockout, CSPRNG tokens, authorization guards on all CRUD/lead/media functions, and strict file upload validation.
-3. `src/services/settings.js` — Implemented administrator session verification and secret masking for API configuration keys.
-4. `vercel.json` — Configured production HTTP security headers (CSP, HSTS, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy).
-5. `public/robots.txt` — Created search crawler directives to disallow `/admin` and link sitemap.
-6. `public/sitemap.xml` — Created XML sitemap referencing canonical public pages.
-7. `test/cms-qa-suite.test.js` — Expanded automated test suite to 20 comprehensive security and functional tests.
-8. `package.json` — Added `dompurify` and `jsdom` (devDependency) for secure HTML sanitization and regression testing.
-9. `SECURITY_AUDIT.md` — Client-ready security report.
+1. `src/pages/NewsletterArchivePage.jsx` - Implemented `DOMPurify` HTML sanitization to eliminate Stored XSS.
+2. `src/services/db.js` - Hardened authentication with PBKDF2 salted hashing, brute-force lockout, CSPRNG tokens, authorization guards on all CRUD/lead/media functions, and strict file upload validation.
+3. `src/services/settings.js` - Implemented administrator session verification and secret masking for API configuration keys.
+4. `vercel.json` - Configured production HTTP security headers (CSP, HSTS, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy).
+5. `public/robots.txt` - Created search crawler directives to disallow `/admin` and link sitemap.
+6. `public/sitemap.xml` - Created XML sitemap referencing canonical public pages.
+7. `test/cms-qa-suite.test.js` - Expanded automated test suite to 20 comprehensive security and functional tests.
+8. `package.json` - Added `dompurify` and `jsdom` (devDependency) for secure HTML sanitization and regression testing.
+9. `SECURITY_AUDIT.md` - Client-ready security report.
 
 ---
 

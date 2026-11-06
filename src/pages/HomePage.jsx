@@ -161,28 +161,18 @@ export default function HomePage({ onNavigate, onOpenCertificate }) {
 
             {/* Right: Book Content */}
             <div className="book-content reveal-right">
-              <h1 className="hero-headline">
-                <EditableText
-                  as="span"
-                  contentKey="hero.line1"
-                  defaultValue="Train your"
-                  className="hero-line hero-highlight"
-                />{' '}
-                <span className="hero-line hero-highlight">
-                  <EditableText
-                    as="span"
-                    contentKey="hero.line2"
-                    defaultValue="strength, muscle"
-                    className="hero-highlight"
-                  />
-                </span>{' '}
-                <EditableText
-                  as="span"
-                  contentKey="hero.line3"
-                  defaultValue="& endurance every day"
-                  className="hero-line hero-highlight"
-                />
-              </h1>
+              <EditableText
+                as="h1"
+                contentKey="hero.headline"
+                defaultValue={
+                  content?.hero?.headline ||
+                  (content?.hero?.line1
+                    ? `${content.hero.line1}\n${content.hero.line2 || ''}\n${content.hero.line3 || ''}`.trim()
+                    : 'Train your\nstrength, muscle\n& endurance every day')
+                }
+                className="hero-headline"
+                allowMultiline={true}
+              />
               <EditableText
                 as="p"
                 contentKey="hero.subheadline1"
@@ -582,25 +572,25 @@ export default function HomePage({ onNavigate, onOpenCertificate }) {
       <EditableSection className="footer-signup scroll-reveal" id="newsletter" sectionKey="home.newsletter" sectionLabel="Newsletter Signup Section">
         <div className="page-wrap">
           <div className="footer-signup-text reveal-left">
-            <h2>
-              <em>Free</em><br />
+            <span className="footer-signup-free">Free</span>
+            <h2 className="footer-signup-heading">
               <EditableText
                 as="span"
                 contentKey="newsletter.heading"
-                defaultValue="E.L.R.x Newsletter"
+                defaultValue="Get the Weekly Signal."
                 className="footer-newsletter-underline"
               />
             </h2>
             <EditableText
               as="p"
               contentKey="newsletter.sub"
-              defaultValue="Join 1,000+ millennials. One story from my journey, one thing you can apply this week. Sent when it's worth sending."
+              defaultValue="One kettlebell complex, one training principle, one honest update every Sunday morning. No sponsors, no spam, unsubscribe in one click."
               className="sub"
             />
           </div>
           <div className="footer-signup-cta reveal-right">
             {footerSignupStatus !== 'success' ? (
-              <form onSubmit={handleFooterSignup} className="signup-row">
+              <form onSubmit={handleFooterSignup} className="signup-row footer-newsletter-form">
                 <input
                   type="email"
                   placeholder="Your Email Address"
@@ -632,7 +622,7 @@ export default function HomePage({ onNavigate, onOpenCertificate }) {
             <EditableText
               as="p"
               contentKey="newsletter.tagline"
-              defaultValue="No fluff. No toxic gym culture. Just what works. 🔥"
+              defaultValue="1,000+ everyday lifters read it. Zero guru nonsense."
               className="hero-tagline"
             />
           </div>
@@ -727,13 +717,12 @@ export default function HomePage({ onNavigate, onOpenCertificate }) {
                   </span>
                 </div>
               </div>
-              <button
-                type="button"
+              <EditableButton
+                buttonKey="modal.article.closeCta"
+                defaultText="Close Essay"
                 className="modal-reader-close-action"
                 onClick={() => setActiveArticle(null)}
-              >
-                Close Essay
-              </button>
+              />
             </div>
           </div>
         </div>,

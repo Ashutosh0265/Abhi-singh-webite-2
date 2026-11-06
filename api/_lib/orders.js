@@ -40,6 +40,18 @@ function persistToDisk() {
 }
 
 /**
+ * Valid delivery states
+ */
+export const DELIVERY_STATUSES = {
+  PENDING: 'PENDING',
+  PROCESSING: 'PROCESSING',
+  PROVIDER_ACCEPTED: 'PROVIDER_ACCEPTED',
+  DELIVERED: 'DELIVERED',
+  FAILED: 'FAILED',
+  BOUNCED: 'BOUNCED',
+};
+
+/**
  * Create a new order record with full schema
  */
 export function createOrderRecord(orderData) {
@@ -60,6 +72,8 @@ export function createOrderRecord(orderData) {
     }
   }
 
+  const initialDeliveryStatus = orderData.delivery_status || DELIVERY_STATUSES.PENDING;
+
   const record = {
     id,
     customer_name: orderData.customer_name || 'Customer',
@@ -72,11 +86,14 @@ export function createOrderRecord(orderData) {
     payment_gateway: orderData.payment_gateway || 'free',
     payment_status: orderData.payment_status || (orderData.product_price === 0 ? 'FREE' : 'PENDING'),
     gateway_payment_reference: orderData.gateway_payment_reference || null,
-    delivery_status: orderData.delivery_status || 'NOT_STARTED',
-    email_status: orderData.email_status || (orderData.delivery_status === 'SENT' ? 'EMAIL_SENT' : 'EMAIL_PENDING'),
+    delivery_status: initialDeliveryStatus,
+    email_status: orderData.email_status || initialDeliveryStatus,
     delivery_attempt_count: orderData.delivery_attempt_count ?? 0,
     delivery_timestamp: orderData.delivery_timestamp || null,
     delivery_error: orderData.delivery_error || null,
+    delivery_provider: orderData.delivery_provider || null,
+    delivery_message_id: orderData.delivery_message_id || null,
+    delivery_logs: Array.isArray(orderData.delivery_logs) ? orderData.delivery_logs : [],
     download_token: orderData.download_token || null,
     pdf_url: orderData.pdf_url || null,
     file_name: orderData.file_name || null,
@@ -112,12 +129,42 @@ export function updateOrderRecord(orderId, updates) {
   const updated = {
     ...existing,
     ...updates,
+    delivery_logs: Array.isArray(updates.delivery_logs)
+      ? updates.delivery_logs
+      : existing.delivery_logs || [],
     updated_at: new Date().toISOString(),
   };
 
   memoryOrders.set(orderId, updated);
   persistToDisk();
   return updated;
+}
+
+/**
+ * Append a detailed delivery audit log entry to an order
+ */
+export function addDeliveryLog(orderId, logEntry) {
+  const existing = memoryOrders.get(orderId);
+  if (!existing) return null;
+
+  const currentLogs = Array.isArray(existing.delivery_logs) ? existing.delivery_logs : [];
+  const entry = {
+    timestamp: new Date().toISOString(),
+    order_id: orderId,
+    product_id: logEntry.productId || existing.product_id,
+    recipient_email: logEntry.recipientEmail || existing.customer_email,
+    provider: logEntry.provider || 'unknown',
+    subject: logEntry.subject || '',
+    status: logEntry.status || DELIVERY_STATUSES.PROCESSING,
+    message_id: logEntry.messageId || null,
+    attachment_filename: logEntry.attachmentFilename || existing.file_name || null,
+    attachment_size_bytes: logEntry.attachmentSizeBytes || null,
+    provider_response: logEntry.providerResponse || null,
+    error_details: logEntry.errorDetails || null,
+  };
+
+  const updatedLogs = [entry, ...currentLogs];
+  return updateOrderRecord(orderId, { delivery_logs: updatedLogs });
 }
 
 /**
@@ -139,13 +186,26 @@ export function listOrders(filters = {}) {
     const q = filters.search.toLowerCase();
     list = list.filter(
       (o) =>
-        o.id.toLowerCase().includes(q) ||
-        o.customer_name.toLowerCase().includes(q) ||
-        o.customer_email.toLowerCase().includes(q) ||
-        o.product_name.toLowerCase().includes(q)
+        (o.id || '').toLowerCase().includes(q) ||
+        (o.customer_name || '').toLowerCase().includes(q) ||
+        (o.customer_email || '').toLowerCase().includes(q) ||
+        (o.product_name || '').toLowerCase().includes(q)
     );
   }
 
   // Sort descending by created_at
   return list.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+}
+
+/**
+ * List all delivery audit logs across all orders
+ */
+export function listDeliveryLogs() {
+  const allLogs = [];
+  for (const order of memoryOrders.values()) {
+    if (Array.isArray(order.delivery_logs)) {
+      allLogs.push(...order.delivery_logs);
+    }
+  }
+  return allLogs.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 }

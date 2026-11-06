@@ -262,9 +262,12 @@ export default function NewsletterArchivePage({ selectedEditionId, onSelectEditi
                       onChange={(e) => setEmail(e.target.value)}
                       required
                     />
-                    <button type="submit" disabled={isSubmitting}>
-                      {isSubmitting ? 'Joining…' : 'Subscribe Free →'}
-                    </button>
+                    <EditableButton
+                      buttonKey="archive.subscribeCta"
+                      defaultText="Subscribe Free →"
+                      type="submit"
+                      disabled={isSubmitting}
+                    />
                   </form>
                 ) : (
                   <div

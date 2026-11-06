@@ -13,7 +13,7 @@
 
 The primary objective was to significantly elevate the text presentation, readability, hierarchy, and scanning comfort across the entire **Abhi Singh website** and the **CMS Admin Dashboard**, without modifying the approved brand styling, colors (`#FF6200`, `#FFE785`, `#000000`, `#FFFFFF`), component layouts, or feature logic.
 
-Drawing inspiration from Noah Kagan's renowned editorial readability principles—generous leading, distinct contrast between headlines and body text, comfortable paragraph measures, and scannable visual pacing—we refined the global typography system while preserving the strictly locked font families:
+Drawing inspiration from Noah Kagan's renowned editorial readability principles-generous leading, distinct contrast between headlines and body text, comfortable paragraph measures, and scannable visual pacing-we refined the global typography system while preserving the strictly locked font families:
 - **Headings & Display:** `Lora` (Serif)
 - **Body & Controls:** `Arial` (Clean Sans-Serif)
 
@@ -118,7 +118,7 @@ Introduced responsive typography design tokens into `:root`:
 ---
 
 ## 6. Files Modified
-1. `src/index.css` — Global typography tokens, heading scales, body rhythm, longform article reader typography, and form controls.
-2. `src/admin/AdminDashboard.css` — Admin tokens, table cell spacing, form typography, and card readability.
-3. `TYPOGRAPHY_READABILITY_REPORT.md` — Comprehensive documentation and verification record.
+1. `src/index.css` - Global typography tokens, heading scales, body rhythm, longform article reader typography, and form controls.
+2. `src/admin/AdminDashboard.css` - Admin tokens, table cell spacing, form typography, and card readability.
+3. `TYPOGRAPHY_READABILITY_REPORT.md` - Comprehensive documentation and verification record.
 

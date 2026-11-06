@@ -30,21 +30,21 @@ export default function BookCover() {
     >
       <div className="book-cover" aria-label="Eat. Lift. Run. x - 10 kettlebell complexes for everyday people">
         {customCover ? (
-          <img
-            src={customCover}
-            alt="Eat. Lift. Run. x Book Cover"
-            style={{
-              position: 'absolute',
-              inset: 0,
-              width: '100%',
-              height: '100%',
-              objectFit: 'cover',
-              zIndex: 2,
-            }}
-          />
+          <div className="book-cover-img-container" style={{ width: '100%', height: 'auto', overflow: 'visible' }}>
+            <img
+              src={customCover}
+              alt="Eat. Lift. Run. x Book Cover"
+              style={{
+                width: '100%',
+                height: 'auto',
+                objectFit: 'contain',
+                display: 'block',
+                borderRadius: '3px 6px 6px 3px',
+              }}
+            />
+          </div>
         ) : (
           <>
-            <div className="cover-top"></div>
             <div className="cover-title-block">
               <div className="cover-title">
                 Eat.<br />
@@ -56,7 +56,7 @@ export default function BookCover() {
               <div className="cover-subtitle">10 kettlebell complexes for everyday people</div>
               <div className="cover-author-row">
                 <img
-                  src="assets/author-photo.png"
+                  src="/assets/author-photo.png"
                   alt="Abhi Singh"
                   className="cover-author-photo"
                 />

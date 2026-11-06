@@ -1,4 +1,4 @@
-import { getOrderById, updateOrderRecord } from './_lib/orders.js';
+import { getOrderById, updateOrderRecord, addDeliveryLog, DELIVERY_STATUSES } from './_lib/orders.js';
 import { getProductById } from './_lib/products.js';
 import { generateDownloadToken } from './_lib/tokens.js';
 import { buildPaidDeliveryEmail, sendTransactionalEmail } from './_lib/email.js';
@@ -96,7 +96,8 @@ export default async function handler(req, res) {
     updateOrderRecord(orderId, {
       payment_status: 'PAID',
       gateway_payment_reference: transactionId,
-      delivery_status: 'QUEUED',
+      delivery_status: DELIVERY_STATUSES.PROCESSING,
+      email_status: DELIVERY_STATUSES.PROCESSING,
       download_token: token,
     });
 
@@ -114,12 +115,9 @@ export default async function handler(req, res) {
       hasAttachment: true,
     });
 
-    let deliveryStatus = 'SENT';
-    let emailStatus = 'EMAIL_SENT';
-    let deliveryError = null;
-
+    let emailResult;
     try {
-      const emailResult = await sendTransactionalEmail({
+      emailResult = await sendTransactionalEmail({
         to: order.customer_email,
         subject: 'Payment Confirmed — Your E.L.R.x PDF Is Ready',
         html,
@@ -127,34 +125,70 @@ export default async function handler(req, res) {
         pdfFilePath: order.pdf_url || product.file_url,
         productName: order.product_name,
         orderId: order.id,
+        allowMock: Boolean(order.is_test || process.env.ALLOW_EMAIL_MOCK_TEST === 'true'),
+      });
+    } catch (eErr) {
+      emailResult = {
+        success: false,
+        status: DELIVERY_STATUSES.FAILED,
+        provider: 'unknown',
+        error: eErr.message,
+      };
+    }
+
+    addDeliveryLog(orderId, {
+      productId: order.product_id,
+      recipientEmail: order.customer_email,
+      provider: emailResult.provider || 'unknown',
+      subject: 'Payment Confirmed — Your E.L.R.x PDF Is Ready',
+      status: emailResult.status || (emailResult.success ? DELIVERY_STATUSES.PROVIDER_ACCEPTED : DELIVERY_STATUSES.FAILED),
+      messageId: emailResult.messageId || null,
+      attachmentFilename: fileName,
+      attachmentSizeBytes: emailResult.attachmentInfo ? emailResult.attachmentInfo.size : null,
+      providerResponse: emailResult.response || null,
+      errorDetails: emailResult.error || null,
+    });
+
+    if (!emailResult.success) {
+      updateOrderRecord(orderId, {
+        delivery_status: DELIVERY_STATUSES.FAILED,
+        email_status: DELIVERY_STATUSES.FAILED,
+        delivery_error: emailResult.error || 'Email dispatch failed',
+        delivery_provider: emailResult.provider || 'unconfigured',
       });
 
-      if (!emailResult.success) {
-        deliveryStatus = 'FAILED';
-        emailStatus = 'EMAIL_FAILED';
-        deliveryError = emailResult.error || 'Email provider rejected delivery';
-      }
-    } catch (eErr) {
-      deliveryStatus = 'FAILED';
-      emailStatus = 'EMAIL_FAILED';
-      deliveryError = eErr.message;
+      return res.status(200).json({
+        success: true,
+        orderId: order.id,
+        paymentStatus: 'PAID',
+        deliveryStatus: DELIVERY_STATUSES.FAILED,
+        emailStatus: DELIVERY_STATUSES.FAILED,
+        statusLabel: 'Email delivery pending admin dispatch',
+        warning: 'Payment verified, but email dispatch failed. Our admin team has been notified to retry delivery.',
+        error: emailResult.error,
+      });
     }
 
     updateOrderRecord(orderId, {
-      delivery_status: deliveryStatus,
-      email_status: emailStatus,
+      delivery_status: DELIVERY_STATUSES.PROVIDER_ACCEPTED,
+      email_status: DELIVERY_STATUSES.PROVIDER_ACCEPTED,
+      delivery_provider: emailResult.provider,
+      delivery_message_id: emailResult.messageId,
       delivery_timestamp: new Date().toISOString(),
-      delivery_error: deliveryError,
+      delivery_error: null,
     });
 
     return res.status(200).json({
       success: true,
       orderId: order.id,
       paymentStatus: 'PAID',
-      deliveryStatus,
-      emailStatus,
+      deliveryStatus: DELIVERY_STATUSES.PROVIDER_ACCEPTED,
+      emailStatus: DELIVERY_STATUSES.PROVIDER_ACCEPTED,
+      statusLabel: 'Email accepted by provider',
+      provider: emailResult.provider,
+      messageId: emailResult.messageId,
       downloadUrl: downloadPath,
-      message: 'Payment successful! Your PDF has been sent to your email address.',
+      message: 'Payment successful! Your PDF has been accepted by the email service for delivery.',
     });
   } catch (err) {
     console.error('[verify-paypal] Exception:', err);

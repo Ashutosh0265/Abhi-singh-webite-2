@@ -1,5 +1,5 @@
 import { getProductById, hasValidPdfDeliverable, inrToUsd } from './_lib/products.js';
-import { createOrderRecord, updateOrderRecord } from './_lib/orders.js';
+import { createOrderRecord, updateOrderRecord, addDeliveryLog, DELIVERY_STATUSES } from './_lib/orders.js';
 import { generateDownloadToken } from './_lib/tokens.js';
 import { buildFreeDeliveryEmail, sendTransactionalEmail } from './_lib/email.js';
 
@@ -34,7 +34,7 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'A valid email address is required (e.g. name@example.com).' });
     }
 
-    // 2. Validate product against authoritative server database
+    // 2. Validate product against authoritative server catalog
     const product = getProductById(productId);
     if (!product) {
       return res.status(404).json({ error: 'Product not found in store catalog.' });
@@ -53,7 +53,7 @@ export default async function handler(req, res) {
     const baseUrl = `${protocol}://${host}`;
 
     // ─────────────────────────────────────────────────────────────
-    // FLOW 1: FREE DIGITAL PRODUCT DOWNLOAD
+    // FLOW 1: FREE DIGITAL PRODUCT DOWNLOAD & EMAIL DISPATCH
     // ─────────────────────────────────────────────────────────────
     if (product.is_free || product.priceAmount === 0) {
       const order = createOrderRecord({
@@ -67,7 +67,8 @@ export default async function handler(req, res) {
         payment_gateway: 'free',
         payment_status: 'FREE',
         gateway_payment_reference: 'free_instant_access',
-        delivery_status: 'QUEUED',
+        delivery_status: DELIVERY_STATUSES.PROCESSING,
+        email_status: DELIVERY_STATUSES.PROCESSING,
         pdf_url: product.file_url,
         file_name: product.file_name,
         is_test: Boolean(isTestMode),
@@ -83,7 +84,7 @@ export default async function handler(req, res) {
       const downloadPath = `/api/download-pdf?orderId=${encodeURIComponent(order.id)}&token=${encodeURIComponent(token)}&file=${encodeURIComponent(fileName)}`;
       const absoluteDownloadUrl = `${baseUrl}${downloadPath}`;
 
-      // Build & trigger brand-aligned transactional email
+      // Build brand-aligned transactional email
       const { html, text } = buildFreeDeliveryEmail({
         customerName: cleanName,
         productName: product.name,
@@ -93,12 +94,9 @@ export default async function handler(req, res) {
         hasAttachment: true,
       });
 
-      let deliveryStatus = 'SENT';
-      let emailStatus = 'EMAIL_SENT';
-      let deliveryError = null;
-
+      let emailResult;
       try {
-        const emailResult = await sendTransactionalEmail({
+        emailResult = await sendTransactionalEmail({
           to: cleanEmail,
           subject: `Your Free E.L.R.x PDF — ${product.name}`,
           html,
@@ -106,46 +104,75 @@ export default async function handler(req, res) {
           pdfFilePath: product.file_url,
           productName: product.name,
           orderId: order.id,
+          allowMock: Boolean(isTestMode || process.env.ALLOW_EMAIL_MOCK_TEST === 'true'),
         });
-
-        if (!emailResult.success) {
-          deliveryStatus = 'FAILED';
-          emailStatus = 'EMAIL_FAILED';
-          deliveryError = emailResult.error || 'Email provider rejected delivery';
-        }
-      } catch (eErr) {
-        deliveryStatus = 'FAILED';
-        emailStatus = 'EMAIL_FAILED';
-        deliveryError = eErr.message;
+      } catch (dispatchErr) {
+        emailResult = {
+          success: false,
+          status: DELIVERY_STATUSES.FAILED,
+          provider: 'unknown',
+          error: dispatchErr.message,
+        };
       }
 
-      updateOrderRecord(order.id, {
-        delivery_status: deliveryStatus,
-        email_status: emailStatus,
-        delivery_timestamp: new Date().toISOString(),
-        delivery_error: deliveryError,
-        download_token: token,
+      // Log the delivery event with full audit metadata
+      addDeliveryLog(order.id, {
+        productId: product.id,
+        recipientEmail: cleanEmail,
+        provider: emailResult.provider || 'unknown',
+        subject: `Your Free E.L.R.x PDF — ${product.name}`,
+        status: emailResult.status || (emailResult.success ? DELIVERY_STATUSES.PROVIDER_ACCEPTED : DELIVERY_STATUSES.FAILED),
+        messageId: emailResult.messageId || null,
+        attachmentFilename: fileName,
+        attachmentSizeBytes: emailResult.attachmentInfo ? emailResult.attachmentInfo.size : null,
+        providerResponse: emailResult.response || null,
+        errorDetails: emailResult.error || null,
       });
 
-      if (deliveryStatus === 'FAILED') {
+      if (!emailResult.success) {
+        updateOrderRecord(order.id, {
+          delivery_status: DELIVERY_STATUSES.FAILED,
+          email_status: DELIVERY_STATUSES.FAILED,
+          delivery_error: emailResult.error || 'Email dispatch failed',
+          delivery_provider: emailResult.provider || 'unconfigured',
+          download_token: token,
+        });
+
         return res.status(502).json({
           success: false,
-          error: 'We were unable to deliver your PDF to this email. Please check your email address and try again.',
           orderId: order.id,
-          deliveryStatus: 'FAILED',
-          emailStatus: 'EMAIL_FAILED',
+          productName: product.name,
+          paymentStatus: 'FREE',
+          deliveryStatus: DELIVERY_STATUSES.FAILED,
+          emailStatus: DELIVERY_STATUSES.FAILED,
+          statusLabel: 'Email delivery failed',
+          error: `Email delivery could not be completed: ${emailResult.error || 'Unknown email service error'}. Please try again later or contact support.`,
         });
       }
+
+      // Provider successfully accepted the email for relay/delivery
+      updateOrderRecord(order.id, {
+        delivery_status: DELIVERY_STATUSES.PROVIDER_ACCEPTED,
+        email_status: DELIVERY_STATUSES.PROVIDER_ACCEPTED,
+        delivery_provider: emailResult.provider,
+        delivery_message_id: emailResult.messageId,
+        delivery_timestamp: new Date().toISOString(),
+        delivery_error: null,
+        download_token: token,
+      });
 
       return res.status(200).json({
         success: true,
         orderId: order.id,
         productName: product.name,
         paymentStatus: 'FREE',
-        deliveryStatus: 'SENT',
-        emailStatus: 'EMAIL_SENT',
-        message: 'Your PDF is on its way! Please check your inbox.',
-        secondaryMessage: "If you don't see the email, please check your spam or promotions folder.",
+        deliveryStatus: DELIVERY_STATUSES.PROVIDER_ACCEPTED,
+        emailStatus: DELIVERY_STATUSES.PROVIDER_ACCEPTED,
+        statusLabel: 'Email accepted by provider',
+        provider: emailResult.provider,
+        messageId: emailResult.messageId,
+        message: 'Your PDF has been accepted by the email service for delivery.',
+        secondaryMessage: "Please check your inbox (and spam/promotions folder) shortly.",
         downloadUrl: downloadPath,
       });
     }
@@ -165,7 +192,8 @@ export default async function handler(req, res) {
       product_type: 'PAID',
       payment_gateway: paymentGateway,
       payment_status: 'PENDING',
-      delivery_status: 'NOT_STARTED',
+      delivery_status: DELIVERY_STATUSES.PENDING,
+      email_status: DELIVERY_STATUSES.PENDING,
       pdf_url: product.file_url,
       file_name: product.file_name,
       is_test: Boolean(isTestMode),

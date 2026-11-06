@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { EditableText, EditableImage } from './live-editor';
+import { EditableText, EditableImage, EditableButton } from './live-editor';
 
 export default function Navbar({ currentPage, onNavigate }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -143,13 +143,13 @@ export default function Navbar({ currentPage, onNavigate }) {
             </a>
           </li>
           <li>
-            <button
-              type="button"
+            <EditableButton
+              buttonKey="nav.cta"
+              defaultText="Work With Me"
+              defaultHref="/work-with-me"
               className={`nav-cta ${isCtaClicked ? 'clicked' : ''}`}
               onClick={handleWorkWithMe}
-            >
-              <EditableText as="span" contentKey="nav.cta" defaultValue="Work With Me" />
-            </button>
+            />
           </li>
         </ul>
       </div>

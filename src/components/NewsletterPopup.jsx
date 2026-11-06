@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { submitNewsletterSignup } from '../utils/tracking';
 import { getSiteContent, DEFAULT_SITE_CONTENT } from '../services/db';
-import { EditableText } from './live-editor';
+import { EditableText, EditableButton, useLiveEditor, getNestedValue } from './live-editor';
 
 export default function NewsletterPopup() {
+  const { activeContent } = useLiveEditor();
   const [isOpen, setIsOpen] = useState(false);
   const [email, setEmail] = useState('');
   const [submitted, setSubmitted] = useState(false);
@@ -37,11 +38,16 @@ export default function NewsletterPopup() {
       }
     } catch {}
 
+    // Listen for manual trigger from CMS Live Editor Popups Tab
+    const handleManualOpen = () => setIsOpen(true);
+    window.addEventListener('elrx_open_newsletter_popup', handleManualOpen);
+
     // Check if user has already dismissed the popup in this session
     const hasDismissed = sessionStorage.getItem('elrx_popup_dismissed');
     if (hasDismissed) {
       return () => {
         isMounted = false;
+        window.removeEventListener('elrx_open_newsletter_popup', handleManualOpen);
         window.removeEventListener('elrx_data_changed', handleSync);
         window.removeEventListener('storage', handleSync);
         window.removeEventListener('focus', handleSync);
@@ -143,9 +149,24 @@ export default function NewsletterPopup() {
                 />
               </div>
               <div className="newsletter-popup-author-info">
-                <strong className="newsletter-popup-author-name">Abhi Singh</strong>
-                <span className="newsletter-popup-author-sub">ACE Certified Coach</span>
-                <span className="newsletter-popup-tag">Creator, Eat. Lift. Run. x</span>
+                <EditableText
+                  as="strong"
+                  contentKey="newsletterPopup.authorName"
+                  defaultValue="Abhi Singh"
+                  className="newsletter-popup-author-name"
+                />
+                <EditableText
+                  as="span"
+                  contentKey="newsletterPopup.authorSub"
+                  defaultValue="ACE Certified Coach"
+                  className="newsletter-popup-author-sub"
+                />
+                <EditableText
+                  as="span"
+                  contentKey="newsletterPopup.authorTag"
+                  defaultValue="Creator, Eat. Lift. Run. x"
+                  className="newsletter-popup-tag"
+                />
               </div>
             </div>
 
@@ -174,16 +195,15 @@ export default function NewsletterPopup() {
                 <div className="signup-row newsletter-popup-form-row">
                   <input
                     type="email"
-                    placeholder="Enter your email address"
+                    placeholder={getNestedValue(activeContent, 'newsletterPopup.emailPlaceholder', 'Enter your email address')}
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
                     className="newsletter-popup-input"
                   />
-                  <EditableText
-                    as="button"
-                    contentKey="newsletterPopup.ctaText"
-                    defaultValue="Subscribe Free →"
+                  <EditableButton
+                    buttonKey="newsletterPopup.ctaText"
+                    defaultText="Subscribe Free →"
                     type="submit"
                     disabled={isSubmitting}
                     className="newsletter-popup-btn"
@@ -201,19 +221,23 @@ export default function NewsletterPopup() {
           </div>
         ) : (
           <div className="newsletter-popup-success">
-            <h3
+            <EditableText
+              as="h3"
+              contentKey="newsletterPopup.successTitle"
+              defaultValue="You're in!"
               style={{
                 fontFamily: 'var(--font-heading)',
                 fontSize: '2rem',
                 marginBottom: '0.75rem',
                 color: 'var(--color-orange)',
               }}
-            >
-              You're in!
-            </h3>
-            <p style={{ fontSize: '1.05rem', lineHeight: 1.6, color: 'var(--text-color)', maxWidth: '480px', margin: '0 auto' }}>
-              Thank you for subscribing. Check your inbox for the welcome edition and your free complex guide.
-            </p>
+            />
+            <EditableText
+              as="p"
+              contentKey="newsletterPopup.successDesc"
+              defaultValue="Thank you for subscribing. Check your inbox for the welcome edition and your free complex guide."
+              style={{ fontSize: '1.05rem', lineHeight: 1.6, color: 'var(--text-color)', maxWidth: '480px', margin: '0 auto' }}
+            />
           </div>
         )}
       </div>

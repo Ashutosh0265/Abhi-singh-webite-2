@@ -35,10 +35,10 @@ Values measured at **Desktop (1440px)**:
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | **H1** | `h1.entry-title`, `h1` | Figtree | `79.2px` (4.95rem) | 700 | `#212121` (`rgb(33, 33, 33)`) | `87.12px` | 1.10 | `-1.6px` (-0.1rem) | `0px` | `32px` (2rem) | **Present** (1 per page) |
 | **H2** | `h2` | Figtree | `47.52px` (2.97rem) | 700 | `#212121` (`rgb(33, 33, 33)`) | `52.27px` | 1.10 | `-1.6px` (-0.1rem) | `0px` | `32px` (2rem) | **Present** (Major section titles) |
-| **H3** | `h3` | — | *UNAVAILABLE* | — | — | — | — | — | — | — | **Not present on reference site** (0 instances) |
-| **H4** | `h4` | — | *UNAVAILABLE* | — | — | — | — | — | — | — | **Not present on reference site** (0 instances) |
-| **H5** | `h5` | — | *UNAVAILABLE* | — | — | — | — | — | — | — | **Not present on reference site** (0 instances) |
-| **H6** | `h6` | — | *UNAVAILABLE* | — | — | — | — | — | — | — | **Not present on reference site** (0 instances) |
+| **H3** | `h3` | - | *UNAVAILABLE* | - | - | - | - | - | - | - | **Not present on reference site** (0 instances) |
+| **H4** | `h4` | - | *UNAVAILABLE* | - | - | - | - | - | - | - | **Not present on reference site** (0 instances) |
+| **H5** | `h5` | - | *UNAVAILABLE* | - | - | - | - | - | - | - | **Not present on reference site** (0 instances) |
+| **H6** | `h6` | - | *UNAVAILABLE* | - | - | - | - | - | - | - | **Not present on reference site** (0 instances) |
 | **Section Item Subtitle** | `.item-title`, `p > strong` | Figtree | `22px` (1.375rem) | 700 | `#212121` | `35.2px` | 1.60 | `normal` | `0px` | `8px` | **Present** (Styled using block/p) |
 
 > **Key Finding:** The reference website does not employ semantic `<h3>` through `<h6>` tags. Instead, it maintains extreme typographic restraint: a massive, bold **H1 (79.2px)**, a clean **H2 (47.52px)** for section headers, and bolded paragraphs / subheadings for list items.
@@ -127,3 +127,4 @@ The following screenshots were captured during the automated session and saved t
 3. **Color Discipline:** `#212121` (`rgb(33, 33, 33)`) is used consistently for all headings and body text on light backgrounds instead of harsh pure black (`#000000`).
 4. **Prose Measure:** Text width is constrained to `~65–75ch` (`~760px–800px`) so lines do not stretch uncomfortably across wide desktop viewports.
 5. **Adaptation to Locked Fonts (Lora & Arial):** In Abhi Singh's project, the locked font configuration requires **Lora** for headings and **Arial** for body copy. We will adopt Noah Kagan's exact typographic proportions (ratios, line-heights, letter-spacing, and `#212121` text color) mapped to Lora and Arial.
+

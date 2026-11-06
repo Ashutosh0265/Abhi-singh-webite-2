@@ -1,11 +1,16 @@
-import { listOrders, getOrderById, updateOrderRecord } from './_lib/orders.js';
+import { listOrders, getOrderById, updateOrderRecord, addDeliveryLog, listDeliveryLogs, DELIVERY_STATUSES } from './_lib/orders.js';
 import { getProductById } from './_lib/products.js';
 import { generateDownloadToken } from './_lib/tokens.js';
 import { buildFreeDeliveryEmail, buildPaidDeliveryEmail, sendTransactionalEmail } from './_lib/email.js';
 
 export default async function handler(req, res) {
-  // ── GET: List orders with filters ──
+  // ── GET: List orders or delivery logs ──
   if (req.method === 'GET') {
+    if (req.query.view === 'logs' || req.query.view === 'delivery_logs') {
+      const logs = listDeliveryLogs();
+      return res.status(200).json({ success: true, count: logs.length, logs });
+    }
+
     const filters = {
       payment_status: req.query.payment_status || undefined,
       delivery_status: req.query.delivery_status || undefined,
@@ -71,12 +76,14 @@ export default async function handler(req, res) {
               hasAttachment: true,
             });
 
-      let deliveryStatus = 'SENT';
-      let emailStatus = 'EMAIL_SENT';
-      let deliveryError = null;
+      updateOrderRecord(orderId, {
+        delivery_status: DELIVERY_STATUSES.PROCESSING,
+        email_status: DELIVERY_STATUSES.PROCESSING,
+      });
 
+      let emailResult;
       try {
-        const result = await sendTransactionalEmail({
+        emailResult = await sendTransactionalEmail({
           to: order.customer_email,
           subject:
             order.payment_status === 'FREE'
@@ -87,32 +94,70 @@ export default async function handler(req, res) {
           pdfFilePath: order.pdf_url || product.file_url,
           productName: order.product_name,
           orderId: order.id,
+          allowMock: Boolean(order.is_test || process.env.ALLOW_EMAIL_MOCK_TEST === 'true'),
+        });
+      } catch (err) {
+        emailResult = {
+          success: false,
+          status: DELIVERY_STATUSES.FAILED,
+          provider: 'unknown',
+          error: err.message,
+        };
+      }
+
+      addDeliveryLog(orderId, {
+        productId: order.product_id,
+        recipientEmail: order.customer_email,
+        provider: emailResult.provider || 'unknown',
+        subject: order.payment_status === 'FREE' ? `Your Free E.L.R.x PDF — ${order.product_name}` : 'Payment Confirmed — Your E.L.R.x PDF Is Ready',
+        status: emailResult.status || (emailResult.success ? DELIVERY_STATUSES.PROVIDER_ACCEPTED : DELIVERY_STATUSES.FAILED),
+        messageId: emailResult.messageId || null,
+        attachmentFilename: fileName,
+        attachmentSizeBytes: emailResult.attachmentInfo ? emailResult.attachmentInfo.size : null,
+        providerResponse: emailResult.response || null,
+        errorDetails: emailResult.error || null,
+      });
+
+      if (!emailResult.success) {
+        const updated = updateOrderRecord(orderId, {
+          delivery_status: DELIVERY_STATUSES.FAILED,
+          email_status: DELIVERY_STATUSES.FAILED,
+          delivery_attempt_count: (order.delivery_attempt_count || 0) + 1,
+          delivery_timestamp: new Date().toISOString(),
+          delivery_error: emailResult.error || 'Provider rejected email',
+          delivery_provider: emailResult.provider || 'unconfigured',
         });
 
-        if (!result.success) {
-          deliveryStatus = 'FAILED';
-          emailStatus = 'EMAIL_FAILED';
-          deliveryError = result.error || 'Email provider rejected';
-        }
-      } catch (err) {
-        deliveryStatus = 'FAILED';
-        emailStatus = 'EMAIL_FAILED';
-        deliveryError = err.message;
+        return res.status(200).json({
+          success: false,
+          deliveryStatus: DELIVERY_STATUSES.FAILED,
+          emailStatus: DELIVERY_STATUSES.FAILED,
+          statusLabel: 'Email delivery failed',
+          error: emailResult.error,
+          order: updated,
+        });
       }
 
       const updated = updateOrderRecord(orderId, {
-        delivery_status: deliveryStatus,
-        email_status: emailStatus,
+        delivery_status: DELIVERY_STATUSES.PROVIDER_ACCEPTED,
+        email_status: DELIVERY_STATUSES.PROVIDER_ACCEPTED,
+        delivery_provider: emailResult.provider,
+        delivery_message_id: emailResult.messageId,
         delivery_attempt_count: (order.delivery_attempt_count || 0) + 1,
         delivery_timestamp: new Date().toISOString(),
-        delivery_error: deliveryError,
+        delivery_error: null,
         download_token: token,
       });
 
       return res.status(200).json({
-        success: deliveryStatus === 'SENT',
+        success: true,
+        deliveryStatus: DELIVERY_STATUSES.PROVIDER_ACCEPTED,
+        emailStatus: DELIVERY_STATUSES.PROVIDER_ACCEPTED,
+        statusLabel: 'Email accepted by provider',
+        provider: emailResult.provider,
+        messageId: emailResult.messageId,
         order: updated,
-        message: deliveryStatus === 'SENT' ? 'Email delivery dispatched successfully.' : `Delivery attempt logged: ${deliveryError}`,
+        message: 'Deliverable email accepted by provider for transmission.',
       });
     }
 

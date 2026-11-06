@@ -339,8 +339,9 @@ export default function WorkWithMePage({ onNavigate }) {
                 <div className="wwm-explore-block">
                   <span className="wwm-explore-title">While you wait, explore free training resources:</span>
                   <div className="wwm-explore-buttons">
-                    <button
-                      type="button"
+                    <EditableButton
+                      buttonKey="wwm.exploreStoreCta"
+                      defaultText="Explore E.L.R.x Store →"
                       className="wwm-btn-store"
                       onClick={() => {
                         if (onNavigate) {
@@ -349,11 +350,10 @@ export default function WorkWithMePage({ onNavigate }) {
                           window.location.hash = '#store';
                         }
                       }}
-                    >
-                      Explore E.L.R.x Store →
-                    </button>
-                    <button
-                      type="button"
+                    />
+                    <EditableButton
+                      buttonKey="wwm.exploreBlogCta"
+                      defaultText="Read Kettlebell Essays →"
                       className="wwm-btn-blog"
                       onClick={() => {
                         if (onNavigate) {
@@ -362,9 +362,7 @@ export default function WorkWithMePage({ onNavigate }) {
                           window.location.hash = '#blog';
                         }
                       }}
-                    >
-                      Read Kettlebell Essays →
-                    </button>
+                    />
                   </div>
                 </div>
 

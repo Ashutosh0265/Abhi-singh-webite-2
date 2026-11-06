@@ -132,3 +132,4 @@ The CMS Admin Dashboard shares the exact same typography system:
    - H1 scales fluidly to `~32px–34px` (preventing viewport takeover while retaining strong editorial presence).
    - Lists and blog cards stack naturally in a single column (`1fr`).
    - Modal padding compresses to `20px–24px` with full scrollability.
+

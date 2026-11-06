@@ -1,6 +1,10 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import nodemailer from 'nodemailer';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const RESEND_API_URL = 'https://api.resend.com/emails';
 
@@ -19,7 +23,9 @@ export function escapeHtml(str) {
 
 /**
  * 1. Free Product Delivery Email (HTML & Plaintext)
- * Conforms strictly to E.L.R.x brand identity and requested structure.
+ * Conforms strictly to E.L.R.x brand identity and requested structure:
+ * - Brand orange #FF6500, yellow accent #FFE36E, dark typography #212121
+ * - Exact greeting, intro, attachment statement, CTA, and Abhi Singh signature
  */
 export function buildFreeDeliveryEmail({
   customerName,
@@ -30,7 +36,7 @@ export function buildFreeDeliveryEmail({
   hasAttachment = true,
 }) {
   const safeName = escapeHtml(customerName || 'Friend');
-  const safeProduct = escapeHtml(productName);
+  const safeProduct = escapeHtml(productName || 'Habits for Physical and Mental Strength');
   const safeDescription = escapeHtml(
     productDescription ||
       'A practical primer on physical discipline, habit architecture, and mental resilience designed specifically for corporate professionals.'
@@ -66,20 +72,20 @@ export function buildFreeDeliveryEmail({
           <!-- Body Content -->
           <tr>
             <td style="padding: 36px 32px 28px 32px;">
-              <div style="font-size: 12px; font-weight: 800; color: #FF6500; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px;">
-                Free Digital Resource
-              </div>
-              
-              <h2 style="font-family: Georgia, 'Times New Roman', serif; font-size: 26px; font-weight: 700; margin: 0 0 18px 0; color: #121417; line-height: 1.25;">
-                Your free PDF is ready!
-              </h2>
-
               <p style="font-size: 16px; line-height: 1.6; margin: 0 0 16px 0; font-weight: 600; color: #212121;">
                 Hi ${safeName},
               </p>
 
+              <p style="font-size: 15px; line-height: 1.6; margin: 0 0 12px 0; color: #374151;">
+                Welcome to the E.L.R.x community!
+              </p>
+
+              <p style="font-size: 15px; line-height: 1.6; margin: 0 0 20px 0; color: #374151;">
+                Your free digital guide is ready.
+              </p>
+
               <!-- Product Details Box -->
-              <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #FFFDF0; border: 1.5px solid #212121; border-radius: 4px; padding: 20px; margin: 20px 0 24px 0;">
+              <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #FFFDF0; border: 1.5px solid #212121; border-radius: 4px; padding: 20px; margin: 18px 0 24px 0;">
                 <tr>
                   <td>
                     <div style="font-family: Georgia, serif; font-size: 18px; font-weight: 700; color: #212121; margin-bottom: 6px;">
@@ -92,13 +98,13 @@ export function buildFreeDeliveryEmail({
                 </tr>
               </table>
 
-              <!-- Delivery Section -->
+              <!-- Delivery Statement -->
               <p style="font-size: 15px; line-height: 1.6; color: #374151; margin: 0 0 24px 0;">
-                Your digital resource is ready. We've attached your PDF to this email so you can access it whenever you need it.
+                We've attached your PDF to this email so you can download it and keep it for future reference.
               </p>
 
-              <!-- Download CTA Button (Tokenized Secure Access Link) -->
-              <div style="text-align: center; margin: 30px 0 26px 0;">
+              <!-- Download CTA Button -->
+              <div style="text-align: center; margin: 28px 0 26px 0;">
                 <a href="${downloadUrl}" target="_blank" rel="noopener noreferrer" style="background-color: #FF6500; color: #FFFFFF; font-size: 15px; font-weight: 700; text-decoration: none; padding: 14px 34px; border-radius: 4px; border: 1.5px solid #212121; box-shadow: 2.5px 2.5px 0 #212121; display: inline-block; letter-spacing: 0.02em;">
                   Download Your PDF &rarr;
                 </a>
@@ -111,12 +117,12 @@ export function buildFreeDeliveryEmail({
 
               <hr style="border: 0; border-top: 1px solid #E5E7EB; margin: 28px 0 24px 0;" />
 
-              <!-- Footer -->
-              <p style="font-size: 15px; line-height: 1.6; color: #121417; margin: 0 0 4px 0; font-weight: 700;">
-                Abhi Singh
-              </p>
-              <p style="font-size: 13px; color: #6B7280; margin: 0 0 16px 0;">
+              <!-- Sign-off & Footer -->
+              <p style="font-size: 14px; line-height: 1.5; color: #6B7280; margin: 0 0 2px 0;">
                 Eat. Lift. Run. x
+              </p>
+              <p style="font-size: 16px; line-height: 1.6; color: #121417; margin: 0 0 16px 0; font-weight: 700;">
+                Abhi Singh
               </p>
               <p style="font-size: 13px; line-height: 1.6; color: #6B7280; margin: 0;">
                 Thank you for being part of the E.L.R.x community.<br />
@@ -140,25 +146,25 @@ export function buildFreeDeliveryEmail({
   `.trim();
 
   const text = `
-E.L.R.x
-Eat. Lift. Run. x
-
 Hi ${customerName || 'Friend'},
 
-Your free PDF is ready!
+Welcome to the E.L.R.x community!
+
+Your free digital guide is ready.
 
 ${productName}
 ${productDescription || ''}
 
-Your digital resource is ready. We've attached your PDF to this email so you can access it whenever you need it.
+We've attached your PDF to this email so you can download it and keep it for future reference.
 
 Download Your PDF:
 ${downloadUrl}
 
 ${hasAttachment ? `[Attachment: ${fileName}]` : ''}
 
-Abhi Singh
 Eat. Lift. Run. x
+
+Abhi Singh
 
 Thank you for being part of the E.L.R.x community.
 Website: https://abhisingh.me
@@ -261,7 +267,7 @@ export function buildPaidDeliveryEmail({
 
               <!-- Delivery Section -->
               <p style="font-size: 15px; line-height: 1.6; color: #374151; margin: 0 0 24px 0;">
-                Your digital resource is ready. We've attached your PDF to this email so you can access it whenever you need it.
+                We've attached your PDF to this email so you can download it and keep it for future reference.
               </p>
 
               <!-- Download CTA Button (Tokenized Secure Access Link) -->
@@ -279,11 +285,11 @@ export function buildPaidDeliveryEmail({
               <hr style="border: 0; border-top: 1px solid #E5E7EB; margin: 28px 0 24px 0;" />
 
               <!-- Footer -->
-              <p style="font-size: 15px; line-height: 1.6; color: #121417; margin: 0 0 4px 0; font-weight: 700;">
-                Abhi Singh
-              </p>
-              <p style="font-size: 13px; color: #6B7280; margin: 0 0 16px 0;">
+              <p style="font-size: 14px; line-height: 1.5; color: #6B7280; margin: 0 0 2px 0;">
                 Eat. Lift. Run. x
+              </p>
+              <p style="font-size: 16px; line-height: 1.6; color: #121417; margin: 0 0 16px 0; font-weight: 700;">
+                Abhi Singh
               </p>
               <p style="font-size: 13px; line-height: 1.6; color: #6B7280; margin: 0;">
                 Thank you for being part of the E.L.R.x community.<br />
@@ -307,9 +313,6 @@ export function buildPaidDeliveryEmail({
   `.trim();
 
   const text = `
-E.L.R.x
-Eat. Lift. Run. x
-
 Hi ${customerName || 'Friend'},
 
 Thank you for your purchase!
@@ -321,15 +324,16 @@ Amount Paid: ${formattedPrice}
 Payment Reference: ${paymentId}
 Order ID: ${orderId}
 
-Your digital resource is ready. We've attached your PDF to this email so you can access it whenever you need it.
+We've attached your PDF to this email so you can download it and keep it for future reference.
 
 Download Your PDF:
 ${downloadUrl}
 
 ${hasAttachment ? `[Attachment: ${fileName}]` : ''}
 
-Abhi Singh
 Eat. Lift. Run. x
+
+Abhi Singh
 
 Thank you for being part of the E.L.R.x community.
 Website: https://abhisingh.me
@@ -366,6 +370,11 @@ export function buildAdminFailureAlertEmail({ orderId, customerEmail, productNam
 
 /**
  * High-Reliability Dispatcher supporting SMTP (Zoho / Generic) and Resend API
+ * Returns distinct delivery states:
+ * - PROVIDER_ACCEPTED: Provider accepted message for queueing/relay
+ * - FAILED: Provider rejected, missing credentials, or socket error
+ * 
+ * NEVER returns fake success when credentials are missing!
  */
 export async function sendTransactionalEmail({
   to,
@@ -375,8 +384,8 @@ export async function sendTransactionalEmail({
   pdfFilePath,
   productName,
   orderId,
+  allowMock = false,
 }) {
-  const emailProvider = (process.env.EMAIL_PROVIDER || '').toLowerCase();
   const smtpHost = process.env.SMTP_HOST || '';
   const smtpPort = Number(process.env.SMTP_PORT || 465);
   const smtpUser = process.env.SMTP_USER || '';
@@ -395,6 +404,7 @@ export async function sendTransactionalEmail({
       const candidates = [
         path.resolve(process.cwd(), 'public', cleanRelPath),
         path.resolve(process.cwd(), cleanRelPath),
+        path.resolve(__dirname, '../../public', cleanRelPath),
         pdfFilePath,
       ];
       const fullPath = candidates.find((p) => fs.existsSync(p));
@@ -409,7 +419,11 @@ export async function sendTransactionalEmail({
             buffer: fileBuffer,
             size: stats.size,
           };
+        } else {
+          console.warn(`[Email] Attachment skipped: file size ${stats.size} exceeds 10MB limit`);
         }
+      } else {
+        console.warn(`[Email] PDF file not found at any candidate path for ${pdfFilePath}`);
       }
     } catch (attErr) {
       console.warn('[Email] Attachment inspection warning:', attErr.message);
@@ -454,19 +468,25 @@ export async function sendTransactionalEmail({
       }
 
       const info = await transporter.sendMail(mailOptions);
-      console.log(`[Email] Successfully sent via SMTP to ${to} (MessageID: ${info.messageId})`);
+      console.log(`[Email:SMTP] Accepted by provider for ${to} (MessageID: ${info.messageId})`);
       return {
         success: true,
+        status: 'PROVIDER_ACCEPTED',
         messageId: info.messageId,
         provider: 'smtp',
         hasAttachment: Boolean(attachmentInfo),
+        attachmentInfo: attachmentInfo ? { filename: attachmentInfo.filename, size: attachmentInfo.size } : null,
+        response: info.response || '250 OK',
       };
     } catch (smtpErr) {
-      console.error('[Email] SMTP delivery failure:', smtpErr.message);
+      console.error('[Email:SMTP] Delivery failure:', smtpErr.message);
       return {
         success: false,
+        status: 'FAILED',
         provider: 'smtp',
         error: smtpErr.message,
+        hasAttachment: Boolean(attachmentInfo),
+        attachmentInfo: attachmentInfo ? { filename: attachmentInfo.filename, size: attachmentInfo.size } : null,
       };
     }
   }
@@ -504,42 +524,72 @@ export async function sendTransactionalEmail({
 
       if (res.ok) {
         const data = await res.json();
-        console.log(`[Email] Successfully sent via Resend API to ${to} (ID: ${data.id})`);
+        console.log(`[Email:Resend] Accepted by provider for ${to} (ID: ${data.id})`);
         return {
           success: true,
+          status: 'PROVIDER_ACCEPTED',
           messageId: data.id || `resend_${Date.now()}`,
           provider: 'resend',
           hasAttachment: Boolean(attachmentInfo),
+          attachmentInfo: attachmentInfo ? { filename: attachmentInfo.filename, size: attachmentInfo.size } : null,
+          response: data,
         };
       } else {
         const errJson = await res.json().catch(() => ({}));
-        console.error('[Email] Resend API error response:', errJson);
+        console.error('[Email:Resend] API rejected dispatch:', errJson);
         return {
           success: false,
+          status: 'FAILED',
           provider: 'resend',
           error: errJson.message || `Resend error status ${res.status}`,
+          hasAttachment: Boolean(attachmentInfo),
+          attachmentInfo: attachmentInfo ? { filename: attachmentInfo.filename, size: attachmentInfo.size } : null,
         };
       }
     } catch (resendErr) {
-      console.error('[Email] Resend network error:', resendErr.message);
+      console.error('[Email:Resend] Network error connecting to Resend:', resendErr.message);
       return {
         success: false,
+        status: 'FAILED',
         provider: 'resend',
         error: resendErr.message,
+        hasAttachment: Boolean(attachmentInfo),
+        attachmentInfo: attachmentInfo ? { filename: attachmentInfo.filename, size: attachmentInfo.size } : null,
       };
     }
   }
 
   // ─────────────────────────────────────────────────────────────
-  // OPTION C: TEST MODE / LOCAL SANDBOX SIMULATION
-  // When no live SMTP or Resend credentials are provided, safely simulate
-  // and log delivery to enable automated verification without failing.
+  // OPTION C: EXPLICIT MOCK TESTING ONLY (for isolated CI tests)
+  // Activated ONLY when allowMock is true or ALLOW_EMAIL_MOCK_TEST is enabled.
+  // In standard runtime without credentials, it ALWAYS fails honestly.
   // ─────────────────────────────────────────────────────────────
-  console.log(`[Email:Sandbox] Simulated delivery to: ${to} | Subject: "${subject}" | Attachment: ${attachmentInfo ? attachmentInfo.filename : 'none'}`);
+  if (allowMock || process.env.ALLOW_EMAIL_MOCK_TEST === 'true') {
+    const mockId = `mock_dispatch_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+    console.log(`[Email:Mock] Test mock accepted for ${to} | ID: ${mockId}`);
+    return {
+      success: true,
+      status: 'PROVIDER_ACCEPTED',
+      messageId: mockId,
+      provider: 'test_mock_provider',
+      hasAttachment: Boolean(attachmentInfo),
+      attachmentInfo: attachmentInfo ? { filename: attachmentInfo.filename, size: attachmentInfo.size } : null,
+      response: 'Mock Test Delivery Accepted',
+    };
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // OPTION D: UNCONFIGURED CREDENTIALS (CRITICAL BUG ROOT CAUSE FIX)
+  // DO NOT fabricate success. Honestly report that credentials are missing.
+  // ─────────────────────────────────────────────────────────────
+  const missingError = 'Email delivery credentials are not configured on the server. Please set SMTP_HOST, SMTP_PORT, SMTP_USER, and SMTP_PASSWORD (or RESEND_API_KEY) in environment variables.';
+  console.warn(`[Email:Unconfigured] Outgoing dispatch to ${to} blocked: ${missingError}`);
   return {
-    success: true,
-    messageId: `sandbox_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
-    provider: 'sandbox_simulation',
+    success: false,
+    status: 'FAILED',
+    provider: 'unconfigured',
+    error: missingError,
     hasAttachment: Boolean(attachmentInfo),
+    attachmentInfo: attachmentInfo ? { filename: attachmentInfo.filename, size: attachmentInfo.size } : null,
   };
 }

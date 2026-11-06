@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { EditableText, EditableButton } from './live-editor';
 
 export const ALL_ACHIEVEMENTS = [
   {
@@ -98,7 +99,13 @@ export default function CertificateModal({ isOpen, item, onClose }) {
         {/* Modal Header */}
         <div className="modal-header-compact">
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem', flexWrap: 'wrap' }}>
-            <span className="badge-verified">✓ Verified Authentic</span>
+            <span className="badge-verified">
+              <EditableText
+                as="span"
+                contentKey="modal.cert.verifiedBadge"
+                defaultValue="✓ Verified Authentic"
+              />
+            </span>
             <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--orange)' }}>
               {currentItem.badge}
             </span>
@@ -223,14 +230,13 @@ export default function CertificateModal({ isOpen, item, onClose }) {
           <p style={{ fontSize: 'var(--text-body)', color: 'var(--black)', margin: 0, flex: 1, lineHeight: 'var(--line-height-body)' }}>
             {currentItem.description}
           </p>
-          <button
-            type="button"
+          <EditableButton
+            buttonKey="modal.cert.closeCta"
+            defaultText="Close Viewer"
             className="btn-primary-yellow"
             style={{ width: 'auto', padding: '0.5rem 1.25rem', fontSize: '0.82rem', margin: 0 }}
             onClick={onClose}
-          >
-            Close Viewer
-          </button>
+          />
         </div>
       </div>
     </div>

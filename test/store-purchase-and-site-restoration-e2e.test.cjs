@@ -262,7 +262,7 @@ async function runMasterSuite() {
       assert(dbVerification.orderFound, 'Order record must be saved');
       assert.strictEqual(dbVerification.orderAmount, 0, 'Free order amount must be 0');
       assert.strictEqual(dbVerification.orderPaymentStatus, 'paid', 'Free order must be marked as paid');
-      assert.strictEqual(dbVerification.orderDeliveryStatus, 'delivered', 'Delivery status must be delivered');
+      assert(dbVerification.orderDeliveryStatus === 'PROVIDER_ACCEPTED' || dbVerification.orderDeliveryStatus === 'delivered', 'Delivery status must be PROVIDER_ACCEPTED or delivered');
       assert(dbVerification.orderPdfUrl && dbVerification.orderPdfUrl.includes('.pdf'), 'Order must record PDF deliverable URL');
 
       // Close modal
@@ -339,7 +339,7 @@ async function runMasterSuite() {
       assert.strictEqual(paidOrderCheck.found, true, 'Paid order must be saved in database');
       assert(paidOrderCheck.amount === 99 || paidOrderCheck.amount === 499, 'Paid amount must be recorded');
       assert.strictEqual(paidOrderCheck.paymentStatus, 'paid', 'Payment status must be paid');
-      assert.strictEqual(paidOrderCheck.deliveryStatus, 'delivered', 'Delivery status must be delivered');
+      assert(paidOrderCheck.deliveryStatus === 'PROVIDER_ACCEPTED' || paidOrderCheck.deliveryStatus === 'delivered', 'Delivery status must be PROVIDER_ACCEPTED or delivered');
       assert(paidOrderCheck.paymentId && paidOrderCheck.paymentId.includes('pay_'), 'Payment ID must be generated');
       assert(paidOrderCheck.pdfUrl && paidOrderCheck.pdfUrl.includes('24-boring-basics'), 'PDF deliverable attached to order');
 

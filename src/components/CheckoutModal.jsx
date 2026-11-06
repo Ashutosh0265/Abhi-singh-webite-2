@@ -3,8 +3,12 @@ import { createOrder } from '../services/db';
 import { getTrackingPayload, syncToZohoCampaigns } from '../utils/tracking';
 import { getApiSettings } from '../services/settings';
 import { sendProductDeliveryEmail } from '../services/emailDelivery';
+import { useLiveEditor, getNestedValue } from './live-editor/LiveEditorContext';
+import EditableText from './live-editor/EditableText';
+import EditableButton from './live-editor/EditableButton';
 
 export default function CheckoutModal({ product, isOpen, onClose }) {
+  const { activeContent } = useLiveEditor();
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('razorpay');
@@ -47,27 +51,45 @@ export default function CheckoutModal({ product, isOpen, onClose }) {
     customerName,
     customerEmail,
     tracking,
+    deliveryStatus = 'PROVIDER_ACCEPTED',
+    statusLabel = 'Email accepted by provider',
+    provider = null,
+    messageId = null,
     downloadUrl,
     message,
   }) => {
-    let deliveryStatus = 'delivered';
+    let finalDeliveryStatus = deliveryStatus;
+    let finalStatusLabel = statusLabel;
+    let finalProvider = provider;
+    let finalMessageId = messageId;
     const effectivePdfUrl = downloadUrl || product.fileUrl || product.file_url || null;
 
-    try {
-      // 1. Send Transactional PDF Delivery Email (Client-side fallback)
-      const emailResult = await sendProductDeliveryEmail({
-        orderId,
-        customerName,
-        customerEmail,
-        product,
-        paymentId,
-        amount,
-        currency: product.currency || 'INR',
-      });
-      deliveryStatus = emailResult?.deliveryStatus || 'delivered';
-    } catch (deliveryErr) {
-      console.warn('[Checkout] Transactional email note:', deliveryErr);
-      deliveryStatus = 'delivered';
+    // If deliveryStatus was not already supplied by backend
+    if (!deliveryStatus || deliveryStatus === 'PENDING') {
+      try {
+        const emailResult = await sendProductDeliveryEmail({
+          orderId,
+          customerName,
+          customerEmail,
+          product,
+          paymentId,
+          amount,
+          currency: product.currency || 'INR',
+        });
+        if (emailResult && emailResult.success) {
+          finalDeliveryStatus = emailResult.deliveryStatus || 'PROVIDER_ACCEPTED';
+          finalStatusLabel = emailResult.statusLabel || 'Email accepted by provider';
+          finalProvider = emailResult.provider;
+          finalMessageId = emailResult.messageId;
+        } else {
+          finalDeliveryStatus = 'FAILED';
+          finalStatusLabel = 'Email delivery failed';
+        }
+      } catch (deliveryErr) {
+        console.warn('[Checkout] Transactional email note:', deliveryErr);
+        finalDeliveryStatus = 'FAILED';
+        finalStatusLabel = 'Email delivery failed';
+      }
     }
 
     try {
@@ -83,7 +105,7 @@ export default function CheckoutModal({ product, isOpen, onClose }) {
         payment_method: selectedGateway,
         payment_id: paymentId,
         payment_status: isFree || isWaitlist || selectedGateway.includes('razorpay') || selectedGateway.includes('paypal') ? 'paid' : 'pending',
-        delivery_status: deliveryStatus,
+        delivery_status: finalDeliveryStatus,
         pdf_url: effectivePdfUrl,
         is_free: isFree,
         is_waitlist: isWaitlist,
@@ -116,7 +138,10 @@ export default function CheckoutModal({ product, isOpen, onClose }) {
       gateway: selectedGateway,
       amount,
       customerEmail,
-      deliveryStatus,
+      deliveryStatus: finalDeliveryStatus,
+      statusLabel: finalStatusLabel,
+      provider: finalProvider,
+      messageId: finalMessageId,
       downloadUrl: effectivePdfUrl,
       productName: product.name,
       message,
@@ -169,7 +194,7 @@ export default function CheckoutModal({ product, isOpen, onClose }) {
           customerName,
           customerEmail: cleanEmail,
           paymentGateway: isFree || isWaitlist ? 'free' : paymentMethod,
-          isTestMode: false,
+          isTestMode: Boolean(typeof window !== 'undefined' && window.__E2E_TEST__),
           utmSource: tracking.source,
           utmMedium: tracking.medium,
           utmCampaign: tracking.campaign,
@@ -177,18 +202,18 @@ export default function CheckoutModal({ product, isOpen, onClose }) {
         }),
       });
 
-      if (createRes.ok) {
-        backendOrder = await createRes.json();
-      } else {
-        const errData = await createRes.json().catch(() => ({}));
-        if (errData.error) {
-          setErrorMessage(errData.error);
-          setIsProcessing(false);
-          return;
-        }
+      backendOrder = await createRes.json().catch(() => ({}));
+
+      if (!createRes.ok || backendOrder?.success === false || backendOrder?.deliveryStatus === 'FAILED') {
+        setErrorMessage(backendOrder?.error || 'Failed to dispatch email. Please check your email address and try again.');
+        setIsProcessing(false);
+        return;
       }
     } catch (netErr) {
-      console.warn('[Checkout] /api/create-order network note, using client fallback:', netErr.message);
+      console.error('[Checkout] /api/create-order network error:', netErr.message);
+      setErrorMessage('Unable to connect to order server. Please check your internet connection.');
+      setIsProcessing(false);
+      return;
     }
 
     const orderId = backendOrder?.orderId || `ord_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
@@ -197,12 +222,6 @@ export default function CheckoutModal({ product, isOpen, onClose }) {
     // FLOW A: FREE DIGITAL DOWNLOAD OR WAITLIST
     // ─────────────────────────────────────────────────────────────
     if (isFree || isWaitlist || parsedPrice === 0 || backendOrder?.paymentStatus === 'FREE') {
-      if (backendOrder && backendOrder.success === false) {
-        setErrorMessage(backendOrder.error || 'Failed to dispatch email. Please check your email address and try again.');
-        setIsProcessing(false);
-        return;
-      }
-
       await finalizeOrder({
         orderId,
         paymentId: isWaitlist ? 'waitlist_entry' : 'free_instant_access',
@@ -211,8 +230,12 @@ export default function CheckoutModal({ product, isOpen, onClose }) {
         customerName,
         customerEmail: cleanEmail,
         tracking,
+        deliveryStatus: backendOrder?.deliveryStatus || 'PROVIDER_ACCEPTED',
+        statusLabel: backendOrder?.statusLabel || 'Email accepted by provider',
+        provider: backendOrder?.provider || null,
+        messageId: backendOrder?.messageId || null,
         downloadUrl: null,
-        message: 'Your PDF is on its way! Please check your inbox.',
+        message: backendOrder?.message || 'Your PDF has been accepted by the email service for delivery.',
       });
       return;
     }
@@ -490,8 +513,16 @@ export default function CheckoutModal({ product, isOpen, onClose }) {
                   <img src="/assets/avatar.png" alt="Abhi Singh" />
                 </div>
                 <div className="guarantee-text">
-                  <strong>Personal Guarantee from Abhi Singh</strong>
-                  <span>Direct email delivery. No fluff, no spam, actionable guidance.</span>
+                  <EditableText
+                    as="strong"
+                    contentKey="popups.guarantee.title"
+                    defaultValue="Personal Guarantee from Abhi Singh"
+                  />
+                  <EditableText
+                    as="span"
+                    contentKey="popups.guarantee.desc"
+                    defaultValue="Direct email delivery. No fluff, no spam, actionable guidance."
+                  />
                 </div>
               </div>
             </div>
@@ -499,20 +530,44 @@ export default function CheckoutModal({ product, isOpen, onClose }) {
             {/* Right Column: Checkout Form */}
             <div className="checkout-modal-form-wrap" data-lenis-prevent="true">
               <div className="checkout-form-header">
-                <h4>
-                  {isFree
-                    ? 'Get Instant Free Access'
-                    : isWaitlist
-                    ? 'Join the Priority Waitlist'
-                    : 'Complete Your Purchase'}
-                </h4>
-                <p>
-                  {isFree
-                    ? 'Enter your name and email to receive the full PDF in your inbox.'
-                    : isWaitlist
-                    ? 'Be first to access this protocol with exclusive launch pricing.'
-                    : 'Secure checkout with automatic PDF delivery to your inbox.'}
-                </p>
+                {isFree ? (
+                  <EditableText
+                    as="h4"
+                    contentKey="popups.freeCheckout.heading"
+                    defaultValue="Get Instant Free Access"
+                  />
+                ) : isWaitlist ? (
+                  <EditableText
+                    as="h4"
+                    contentKey="popups.waitlist.heading"
+                    defaultValue="Join the Priority Waitlist"
+                  />
+                ) : (
+                  <EditableText
+                    as="h4"
+                    contentKey="popups.paidCheckout.heading"
+                    defaultValue="Complete Your Purchase"
+                  />
+                )}
+                {isFree ? (
+                  <EditableText
+                    as="p"
+                    contentKey="popups.freeCheckout.sub"
+                    defaultValue="Enter your name and email to receive the full PDF in your inbox."
+                  />
+                ) : isWaitlist ? (
+                  <EditableText
+                    as="p"
+                    contentKey="popups.waitlist.sub"
+                    defaultValue="Be first to access this protocol with exclusive launch pricing."
+                  />
+                ) : (
+                  <EditableText
+                    as="p"
+                    contentKey="popups.paidCheckout.sub"
+                    defaultValue="Secure checkout with automatic PDF delivery to your inbox."
+                  />
+                )}
               </div>
 
               {errorMessage && (
@@ -524,13 +579,21 @@ export default function CheckoutModal({ product, isOpen, onClose }) {
               <form className="checkout-form" onSubmit={handleSubmit}>
                 <div className="checkout-form-field">
                   <label htmlFor="checkoutName" className="checkout-form-label">
-                    Full Name <span className="required-star">*</span>
+                    <EditableText
+                      as="span"
+                      contentKey={isFree ? "popups.freeCheckout.nameLabel" : "popups.paidCheckout.nameLabel"}
+                      defaultValue="Full Name"
+                    /> <span className="required-star">*</span>
                   </label>
                   <input
                     id="checkoutName"
                     type="text"
                     className="checkout-form-input"
-                    placeholder="e.g. Rahul Sharma"
+                    placeholder={
+                      isFree
+                        ? getNestedValue(activeContent, 'popups.freeCheckout.namePlaceholder', 'e.g. Rahul Sharma')
+                        : getNestedValue(activeContent, 'popups.paidCheckout.namePlaceholder', 'e.g. Rahul Sharma')
+                    }
                     value={name}
                     onChange={(e) => {
                       setName(e.target.value);
@@ -542,13 +605,21 @@ export default function CheckoutModal({ product, isOpen, onClose }) {
 
                 <div className="checkout-form-field">
                   <label htmlFor="checkoutEmail" className="checkout-form-label">
-                    Email Address (For PDF Delivery) <span className="required-star">*</span>
+                    <EditableText
+                      as="span"
+                      contentKey={isFree ? "popups.freeCheckout.emailLabel" : "popups.paidCheckout.emailLabel"}
+                      defaultValue="Email Address (For PDF Delivery)"
+                    /> <span className="required-star">*</span>
                   </label>
                   <input
                     id="checkoutEmail"
                     type="email"
                     className="checkout-form-input"
-                    placeholder="e.g. rahul@example.com"
+                    placeholder={
+                      isFree
+                        ? getNestedValue(activeContent, 'popups.freeCheckout.emailPlaceholder', 'e.g. rahul@example.com')
+                        : getNestedValue(activeContent, 'popups.paidCheckout.emailPlaceholder', 'e.g. rahul@example.com')
+                    }
                     value={email}
                     onChange={(e) => {
                       setEmail(e.target.value);
@@ -560,7 +631,13 @@ export default function CheckoutModal({ product, isOpen, onClose }) {
 
                 {!isFree && !isWaitlist && (
                   <div className="checkout-form-field">
-                    <label className="checkout-form-label">Select Payment Gateway</label>
+                    <label className="checkout-form-label">
+                      <EditableText
+                        as="span"
+                        contentKey="popups.paidCheckout.gatewayLabel"
+                        defaultValue="Select Payment Gateway"
+                      />
+                    </label>
                     <select
                       className="checkout-form-select"
                       value={paymentMethod}
@@ -584,33 +661,41 @@ export default function CheckoutModal({ product, isOpen, onClose }) {
                   </div>
                 )}
 
-                <button
+                <EditableButton
+                  buttonKey={isFree ? "popups.freeCheckout.cta" : isWaitlist ? "popups.waitlist.cta" : "popups.paidCheckout.cta"}
+                  defaultText={
+                    isOutOfStock
+                      ? 'Currently Out of Stock'
+                      : isPdfMissing
+                      ? 'PDF In Preparation'
+                      : isProcessing
+                      ? (isFree
+                          ? 'Sending your PDF...'
+                          : processingState === 'confirming_payment'
+                          ? 'Confirming payment...'
+                          : processingState === 'sending_pdf'
+                          ? 'Sending your purchased PDF...'
+                          : 'Processing payment...')
+                      : isFree
+                      ? 'Send My Free PDF →'
+                      : isWaitlist
+                      ? 'Join Priority Waitlist →'
+                      : 'Pay & Get My PDF →'
+                  }
                   type="submit"
                   className={`checkout-submit-btn ${isFree || isWaitlist ? 'btn-free' : 'btn-paid'}`}
                   disabled={isProcessing || isOutOfStock || isPdfMissing}
                   style={isOutOfStock || isPdfMissing ? { opacity: 0.6, cursor: 'not-allowed', background: '#9CA3AF', color: '#FFFFFF', borderColor: '#6B7280' } : {}}
-                >
-                  {isOutOfStock
-                    ? 'Currently Out of Stock'
-                    : isPdfMissing
-                    ? 'PDF In Preparation'
-                    : isProcessing
-                    ? (isFree
-                        ? 'Sending your PDF...'
-                        : processingState === 'confirming_payment'
-                        ? 'Confirming payment...'
-                        : processingState === 'sending_pdf'
-                        ? 'Sending your purchased PDF...'
-                        : 'Processing payment...')
-                    : isFree
-                    ? 'Send My Free PDF →'
-                    : isWaitlist
-                    ? 'Join Priority Waitlist →'
-                    : 'Pay & Get My PDF →'}
-                </button>
+                />
 
                 <div className="checkout-trust-badge">
-                  <span>🔒 256-bit Secure Encryption · Direct Email Delivery</span>
+                  <span>
+                    <EditableText
+                      as="span"
+                      contentKey="popups.trustBadge"
+                      defaultValue="🔒 256-bit Secure Encryption · Direct Email Delivery"
+                    />
+                  </span>
                 </div>
               </form>
             </div>
@@ -618,7 +703,14 @@ export default function CheckoutModal({ product, isOpen, onClose }) {
         ) : (
           <div className="checkout-completed-wrap" style={{ textAlign: 'center', padding: '2.5rem 1.5rem' }}>
             <div style={{ fontSize: '3rem', marginBottom: '0.75rem' }}>📬</div>
-            <h3
+            <EditableText
+              as="h3"
+              contentKey={isFree ? "popups.freeCheckout.successTitle" : "popups.paidCheckout.successTitle"}
+              defaultValue={
+                isFree
+                  ? 'Your PDF is on its way! Please check your inbox.'
+                  : 'Payment successful! Your PDF has been sent to your email address.'
+              }
               style={{
                 fontFamily: 'var(--font-heading)',
                 fontSize: '1.85rem',
@@ -626,11 +718,7 @@ export default function CheckoutModal({ product, isOpen, onClose }) {
                 lineHeight: 1.25,
                 color: 'var(--color-orange)',
               }}
-            >
-              {isFree
-                ? 'Your PDF is on its way! Please check your inbox.'
-                : 'Payment successful! Your PDF has been sent to your email address.'}
-            </h3>
+            />
             <p style={{ fontSize: 'var(--text-body)', lineHeight: 'var(--line-height-body)', marginBottom: '1.35rem', color: '#4B5563', maxWidth: '480px', margin: '0 auto 1.35rem auto', fontWeight: 500 }}>
               If you don't see the email, please check your spam or promotions folder.
             </p>
@@ -661,12 +749,32 @@ export default function CheckoutModal({ product, isOpen, onClose }) {
               ) : (
                 <div><strong>Amount:</strong> Free Download</div>
               )}
-              <div style={{ marginTop: '6px' }}>
+              <div style={{ marginTop: '8px' }}>
                 <strong>Email Delivery Status:</strong>{' '}
-                <span style={{ display: 'inline-block', background: '#10B981', color: '#FFFFFF', padding: '2px 9px', borderRadius: '3px', fontSize: '0.78rem', fontWeight: 800 }}>
-                  ✓ Sent to Email
-                </span>
+                {confirmedDetails?.deliveryStatus === 'DELIVERED' ? (
+                  <span style={{ display: 'inline-block', background: '#10B981', color: '#FFFFFF', padding: '2px 9px', borderRadius: '3px', fontSize: '0.78rem', fontWeight: 800 }}>
+                    ✓ Delivered to Inbox
+                  </span>
+                ) : confirmedDetails?.deliveryStatus === 'PROVIDER_ACCEPTED' ? (
+                  <span style={{ display: 'inline-block', background: '#0284C7', color: '#FFFFFF', padding: '2px 9px', borderRadius: '3px', fontSize: '0.78rem', fontWeight: 800 }}>
+                    ✓ Email accepted by provider
+                  </span>
+                ) : confirmedDetails?.deliveryStatus === 'FAILED' ? (
+                  <span style={{ display: 'inline-block', background: '#EF4444', color: '#FFFFFF', padding: '2px 9px', borderRadius: '3px', fontSize: '0.78rem', fontWeight: 800 }}>
+                    ✕ Delivery Failed
+                  </span>
+                ) : (
+                  <span style={{ display: 'inline-block', background: '#F59E0B', color: '#FFFFFF', padding: '2px 9px', borderRadius: '3px', fontSize: '0.78rem', fontWeight: 800 }}>
+                    ⏳ {confirmedDetails?.statusLabel || 'Processing'}
+                  </span>
+                )}
               </div>
+              {confirmedDetails?.provider && confirmedDetails.provider !== 'unconfigured' && (
+                <div style={{ fontSize: '0.78rem', color: '#4B5563', marginTop: '5px' }}>
+                  <strong>Provider:</strong> <span style={{ textTransform: 'uppercase', fontWeight: 700 }}>{confirmedDetails.provider}</span>
+                  {confirmedDetails?.messageId ? ` · Ref: ${confirmedDetails.messageId}` : ''}
+                </div>
+              )}
             </div>
 
             <button

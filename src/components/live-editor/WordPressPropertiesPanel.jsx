@@ -1,5 +1,5 @@
 import React from 'react';
-import { useLiveEditor } from './LiveEditorContext';
+import { useLiveEditor, getNestedValue } from './LiveEditorContext';
 
 export default function WordPressPropertiesPanel() {
   const {
@@ -10,6 +10,7 @@ export default function WordPressPropertiesPanel() {
     selectedElement,
     activeContent,
     typographyStyles,
+    updateField,
     updateTypography,
     resetTypography,
     updateButtonStyle,
@@ -57,7 +58,7 @@ export default function WordPressPropertiesPanel() {
         </button>
       </div>
 
-      {/* Tabs: Element vs Global Theme */}
+      {/* Tabs: Element vs Popups vs Global Theme */}
       <div className="panel-tabs">
         <button
           type="button"
@@ -65,6 +66,13 @@ export default function WordPressPropertiesPanel() {
           onClick={() => setActivePanelTab('element')}
         >
           Block / Element
+        </button>
+        <button
+          type="button"
+          className={`panel-tab-btn ${activePanelTab === 'popups' ? 'active' : ''}`}
+          onClick={() => setActivePanelTab('popups')}
+        >
+          Popups &amp; Modals
         </button>
         <button
           type="button"
@@ -106,6 +114,33 @@ export default function WordPressPropertiesPanel() {
                     className="panel-input"
                     placeholder="https://... or #store"
                   />
+                </div>
+
+                {/* Button Action Type */}
+                <div className="panel-field">
+                  <label>Button Action Mode</label>
+                  <select
+                    className="panel-select"
+                    value={currentButtonStyles.actionType || selectedElement?.data?.actionType || 'default'}
+                    onChange={(e) => updateButtonStyle(elementKey, { actionType: e.target.value })}
+                  >
+                    <option value="default">Default Behavior (Preserves Native Logic)</option>
+                    <option value="submit">Form Submit / Payment Checkout</option>
+                    <option value="link">Anchor Navigation Link</option>
+                    <option value="custom">Interactive Action / Popup Opener</option>
+                  </select>
+                </div>
+
+                {/* Button Visibility */}
+                <div className="panel-field checkbox-field">
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={currentButtonStyles.visible !== false && selectedElement?.data?.visible !== false}
+                      onChange={(e) => updateButtonStyle(elementKey, { visible: e.target.checked })}
+                    />
+                    <span>Button Visible on Live Site</span>
+                  </label>
                 </div>
 
                 {/* Target Tab */}
@@ -259,7 +294,48 @@ export default function WordPressPropertiesPanel() {
             {/* 2. TEXT & TYPOGRAPHY CONTROLS */}
             {elementType === 'text' && (
               <div className="panel-section">
-                <div className="panel-section-title">Typography &amp; Layout</div>
+                <div className="panel-section-title">Text Content &amp; Formatting</div>
+
+                {/* Direct Text Editor Field */}
+                <div className="panel-field">
+                  <div className="field-label-row">
+                    <label>Text Content</label>
+                    <span className="field-value-badge">
+                      {selectedElement?.data?.allowMultiline ? 'Multi-line (Enter for newline)' : 'Live Text'}
+                    </span>
+                  </div>
+                  <textarea
+                    rows={selectedElement?.data?.allowMultiline ? 5 : 3}
+                    className="panel-input"
+                    style={{
+                      width: '100%',
+                      fontFamily: 'inherit',
+                      fontSize: '13px',
+                      lineHeight: '1.45',
+                      padding: '8px 10px',
+                      resize: 'vertical',
+                      whiteSpace: 'pre-wrap',
+                      background: '#1a1d24',
+                      border: '1px solid #374151',
+                      borderRadius: '4px',
+                      color: '#f9fafb',
+                    }}
+                    value={
+                      getNestedValue(activeContent, elementKey, undefined) !== undefined
+                        ? String(getNestedValue(activeContent, elementKey, ''))
+                        : (selectedElement?.data?.text || '')
+                    }
+                    onChange={(e) => updateField(elementKey, e.target.value)}
+                    placeholder="Type content directly..."
+                  />
+                  {selectedElement?.data?.allowMultiline && (
+                    <small style={{ color: '#9CA3AF', fontSize: '11px', display: 'block', marginTop: '4px' }}>
+                      Tip: Press Enter to create new lines (1, 2, 3, or more lines). Line breaks are preserved.
+                    </small>
+                  )}
+                </div>
+
+                <div className="panel-section-title" style={{ marginTop: '16px' }}>Typography &amp; Layout</div>
 
                 {/* HTML Block / Heading Tag */}
                 <div className="panel-field">
@@ -989,7 +1065,391 @@ export default function WordPressPropertiesPanel() {
           </div>
         )}
 
-        {/* TAB 2: GLOBAL THEME & COLOR SYSTEM */}
+        {/* TAB 2: POPUPS & MODALS CONFIGURATION */}
+        {activePanelTab === 'popups' && (
+          <div className="panel-section">
+            <div className="panel-section-title">Website Popups &amp; Modals</div>
+            <p style={{ fontSize: '12px', color: '#9ca3af', marginBottom: '16px', lineHeight: 1.5 }}>
+              Edit content, form field labels, placeholders, buttons, and delivery messages for every modal on the website. Click &ldquo;Preview &amp; Open&rdquo; to test and edit them live on screen.
+            </p>
+
+            {/* 1. FREE PDF ACCESS POPUP */}
+            <div style={{ background: '#1e2330', borderRadius: '6px', padding: '12px', marginBottom: '16px', border: '1px solid #2e384d' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                <strong style={{ fontSize: '13px', color: '#f3f4f6' }}>1. Free PDF Access Popup</strong>
+                <button
+                  type="button"
+                  className="pill-preset-btn"
+                  style={{ fontSize: '11px', padding: '3px 8px', background: '#FF6200', color: '#fff', border: 'none' }}
+                  onClick={() => window.dispatchEvent(new CustomEvent('elrx_preview_modal', { detail: { modalType: 'free' } }))}
+                >
+                  👁 Preview &amp; Open
+                </button>
+              </div>
+
+              <div className="panel-field">
+                <label>Popup Heading</label>
+                <input
+                  type="text"
+                  className="panel-input"
+                  value={getNestedValue(activeContent, 'popups.freeCheckout.heading', 'Get Instant Free Access')}
+                  onChange={(e) => updateField('popups.freeCheckout.heading', e.target.value)}
+                />
+              </div>
+
+              <div className="panel-field">
+                <label>Subheading / Description</label>
+                <textarea
+                  rows={2}
+                  className="panel-input"
+                  style={{ resize: 'vertical' }}
+                  value={getNestedValue(activeContent, 'popups.freeCheckout.sub', 'Enter your name and email to receive the full PDF in your inbox.')}
+                  onChange={(e) => updateField('popups.freeCheckout.sub', e.target.value)}
+                />
+              </div>
+
+              <div className="panel-field">
+                <label>Name Field Label</label>
+                <input
+                  type="text"
+                  className="panel-input"
+                  value={getNestedValue(activeContent, 'popups.freeCheckout.nameLabel', 'Full Name')}
+                  onChange={(e) => updateField('popups.freeCheckout.nameLabel', e.target.value)}
+                />
+              </div>
+
+              <div className="panel-field">
+                <label>Name Input Placeholder</label>
+                <input
+                  type="text"
+                  className="panel-input"
+                  value={getNestedValue(activeContent, 'popups.freeCheckout.namePlaceholder', 'e.g. Rahul Sharma')}
+                  onChange={(e) => updateField('popups.freeCheckout.namePlaceholder', e.target.value)}
+                />
+              </div>
+
+              <div className="panel-field">
+                <label>Email Field Label</label>
+                <input
+                  type="text"
+                  className="panel-input"
+                  value={getNestedValue(activeContent, 'popups.freeCheckout.emailLabel', 'Email Address (For PDF Delivery)')}
+                  onChange={(e) => updateField('popups.freeCheckout.emailLabel', e.target.value)}
+                />
+              </div>
+
+              <div className="panel-field">
+                <label>Email Input Placeholder</label>
+                <input
+                  type="text"
+                  className="panel-input"
+                  value={getNestedValue(activeContent, 'popups.freeCheckout.emailPlaceholder', 'e.g. rahul@example.com')}
+                  onChange={(e) => updateField('popups.freeCheckout.emailPlaceholder', e.target.value)}
+                />
+              </div>
+
+              <div className="panel-field">
+                <label>Button Label Text</label>
+                <input
+                  type="text"
+                  className="panel-input"
+                  value={getNestedValue(activeContent, 'popups.freeCheckout.cta', 'Send My Free PDF →')}
+                  onChange={(e) => {
+                    updateField('popups.freeCheckout.cta', e.target.value);
+                    updateButtonStyle('popups.freeCheckout.cta', { text: e.target.value });
+                  }}
+                />
+              </div>
+
+              <div className="panel-field">
+                <label>Success Message</label>
+                <input
+                  type="text"
+                  className="panel-input"
+                  value={getNestedValue(activeContent, 'popups.freeCheckout.successTitle', 'Your PDF is on its way! Please check your inbox.')}
+                  onChange={(e) => updateField('popups.freeCheckout.successTitle', e.target.value)}
+                />
+              </div>
+            </div>
+
+            {/* 2. PAID PRODUCT PURCHASE POPUP */}
+            <div style={{ background: '#1e2330', borderRadius: '6px', padding: '12px', marginBottom: '16px', border: '1px solid #2e384d' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                <strong style={{ fontSize: '13px', color: '#f3f4f6' }}>2. Paid Product Checkout Popup</strong>
+                <button
+                  type="button"
+                  className="pill-preset-btn"
+                  style={{ fontSize: '11px', padding: '3px 8px', background: '#FF6200', color: '#fff', border: 'none' }}
+                  onClick={() => window.dispatchEvent(new CustomEvent('elrx_preview_modal', { detail: { modalType: 'paid' } }))}
+                >
+                  👁 Preview &amp; Open
+                </button>
+              </div>
+
+              <div className="panel-field">
+                <label>Popup Heading</label>
+                <input
+                  type="text"
+                  className="panel-input"
+                  value={getNestedValue(activeContent, 'popups.paidCheckout.heading', 'Complete Your Purchase')}
+                  onChange={(e) => updateField('popups.paidCheckout.heading', e.target.value)}
+                />
+              </div>
+
+              <div className="panel-field">
+                <label>Subheading / Description</label>
+                <textarea
+                  rows={2}
+                  className="panel-input"
+                  style={{ resize: 'vertical' }}
+                  value={getNestedValue(activeContent, 'popups.paidCheckout.sub', 'Secure checkout with automatic PDF delivery to your inbox.')}
+                  onChange={(e) => updateField('popups.paidCheckout.sub', e.target.value)}
+                />
+              </div>
+
+              <div className="panel-field">
+                <label>Name Field Label</label>
+                <input
+                  type="text"
+                  className="panel-input"
+                  value={getNestedValue(activeContent, 'popups.paidCheckout.nameLabel', 'Full Name')}
+                  onChange={(e) => updateField('popups.paidCheckout.nameLabel', e.target.value)}
+                />
+              </div>
+
+              <div className="panel-field">
+                <label>Email Field Label</label>
+                <input
+                  type="text"
+                  className="panel-input"
+                  value={getNestedValue(activeContent, 'popups.paidCheckout.emailLabel', 'Email Address (For PDF Delivery)')}
+                  onChange={(e) => updateField('popups.paidCheckout.emailLabel', e.target.value)}
+                />
+              </div>
+
+              <div className="panel-field">
+                <label>Payment Gateway Selector Label</label>
+                <input
+                  type="text"
+                  className="panel-input"
+                  value={getNestedValue(activeContent, 'popups.paidCheckout.gatewayLabel', 'Select Payment Gateway')}
+                  onChange={(e) => updateField('popups.paidCheckout.gatewayLabel', e.target.value)}
+                />
+              </div>
+
+              <div className="panel-field">
+                <label>Button Label Text</label>
+                <input
+                  type="text"
+                  className="panel-input"
+                  value={getNestedValue(activeContent, 'popups.paidCheckout.cta', 'Pay & Get My PDF →')}
+                  onChange={(e) => {
+                    updateField('popups.paidCheckout.cta', e.target.value);
+                    updateButtonStyle('popups.paidCheckout.cta', { text: e.target.value });
+                  }}
+                />
+              </div>
+
+              <div className="panel-field">
+                <label>Success Message</label>
+                <input
+                  type="text"
+                  className="panel-input"
+                  value={getNestedValue(activeContent, 'popups.paidCheckout.successTitle', 'Payment Successful! Your PDF has been delivered.')}
+                  onChange={(e) => updateField('popups.paidCheckout.successTitle', e.target.value)}
+                />
+              </div>
+            </div>
+
+            {/* 3. PRIORITY WAITLIST POPUP */}
+            <div style={{ background: '#1e2330', borderRadius: '6px', padding: '12px', marginBottom: '16px', border: '1px solid #2e384d' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                <strong style={{ fontSize: '13px', color: '#f3f4f6' }}>3. Priority Waitlist Popup</strong>
+                <button
+                  type="button"
+                  className="pill-preset-btn"
+                  style={{ fontSize: '11px', padding: '3px 8px', background: '#FF6200', color: '#fff', border: 'none' }}
+                  onClick={() => window.dispatchEvent(new CustomEvent('elrx_preview_modal', { detail: { modalType: 'waitlist' } }))}
+                >
+                  👁 Preview &amp; Open
+                </button>
+              </div>
+
+              <div className="panel-field">
+                <label>Popup Heading</label>
+                <input
+                  type="text"
+                  className="panel-input"
+                  value={getNestedValue(activeContent, 'popups.waitlist.heading', 'Join the Priority Waitlist')}
+                  onChange={(e) => updateField('popups.waitlist.heading', e.target.value)}
+                />
+              </div>
+
+              <div className="panel-field">
+                <label>Subheading / Description</label>
+                <textarea
+                  rows={2}
+                  className="panel-input"
+                  style={{ resize: 'vertical' }}
+                  value={getNestedValue(activeContent, 'popups.waitlist.sub', 'Be first to access this protocol with exclusive launch pricing.')}
+                  onChange={(e) => updateField('popups.waitlist.sub', e.target.value)}
+                />
+              </div>
+
+              <div className="panel-field">
+                <label>Button Label Text</label>
+                <input
+                  type="text"
+                  className="panel-input"
+                  value={getNestedValue(activeContent, 'popups.waitlist.cta', 'Join Priority Waitlist →')}
+                  onChange={(e) => {
+                    updateField('popups.waitlist.cta', e.target.value);
+                    updateButtonStyle('popups.waitlist.cta', { text: e.target.value });
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* 4. EXIT-INTENT / NEWSLETTER POPUP */}
+            <div style={{ background: '#1e2330', borderRadius: '6px', padding: '12px', marginBottom: '16px', border: '1px solid #2e384d' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                <strong style={{ fontSize: '13px', color: '#f3f4f6' }}>4. Exit-Intent Newsletter Popup</strong>
+                <button
+                  type="button"
+                  className="pill-preset-btn"
+                  style={{ fontSize: '11px', padding: '3px 8px', background: '#FF6200', color: '#fff', border: 'none' }}
+                  onClick={() => window.dispatchEvent(new CustomEvent('elrx_preview_modal', { detail: { modalType: 'newsletter' } }))}
+                >
+                  👁 Preview &amp; Open
+                </button>
+              </div>
+
+              <div className="panel-field">
+                <label>Eyebrow Label</label>
+                <input
+                  type="text"
+                  className="panel-input"
+                  value={getNestedValue(activeContent, 'newsletterPopup.eyebrow', 'FREE WEEKLY NEWSLETTER')}
+                  onChange={(e) => updateField('newsletterPopup.eyebrow', e.target.value)}
+                />
+              </div>
+
+              <div className="panel-field">
+                <label>Popup Heading</label>
+                <input
+                  type="text"
+                  className="panel-input"
+                  value={getNestedValue(activeContent, 'newsletterPopup.heading', 'Get the E.L.R.x Weekly')}
+                  onChange={(e) => updateField('newsletterPopup.heading', e.target.value)}
+                />
+              </div>
+
+              <div className="panel-field">
+                <label>Description</label>
+                <textarea
+                  rows={2}
+                  className="panel-input"
+                  style={{ resize: 'vertical' }}
+                  value={getNestedValue(activeContent, 'newsletterPopup.description', 'Join 1,000+ everyday lifters. One story from my training journey, one actionable kettlebell complex or nutrition principle you can apply this week.')}
+                  onChange={(e) => updateField('newsletterPopup.description', e.target.value)}
+                />
+              </div>
+
+              <div className="panel-field">
+                <label>Email Input Placeholder</label>
+                <input
+                  type="text"
+                  className="panel-input"
+                  value={getNestedValue(activeContent, 'newsletterPopup.emailPlaceholder', 'Enter your email address')}
+                  onChange={(e) => updateField('newsletterPopup.emailPlaceholder', e.target.value)}
+                />
+              </div>
+
+              <div className="panel-field">
+                <label>Button Label Text</label>
+                <input
+                  type="text"
+                  className="panel-input"
+                  value={getNestedValue(activeContent, 'newsletterPopup.ctaText', 'Subscribe Free →')}
+                  onChange={(e) => {
+                    updateField('newsletterPopup.ctaText', e.target.value);
+                    updateButtonStyle('newsletterPopup.ctaText', { text: e.target.value });
+                  }}
+                />
+              </div>
+
+              <div className="panel-field">
+                <label>Guarantee / Helper Text</label>
+                <input
+                  type="text"
+                  className="panel-input"
+                  value={getNestedValue(activeContent, 'newsletterPopup.guaranteeText', 'No fluff. No spam. Unsubscribe anytime in one click.')}
+                  onChange={(e) => updateField('newsletterPopup.guaranteeText', e.target.value)}
+                />
+              </div>
+
+              <div className="panel-field">
+                <label>Success Title</label>
+                <input
+                  type="text"
+                  className="panel-input"
+                  value={getNestedValue(activeContent, 'newsletterPopup.successTitle', "You're in!")}
+                  onChange={(e) => updateField('newsletterPopup.successTitle', e.target.value)}
+                />
+              </div>
+
+              <div className="panel-field">
+                <label>Success Description</label>
+                <textarea
+                  rows={2}
+                  className="panel-input"
+                  style={{ resize: 'vertical' }}
+                  value={getNestedValue(activeContent, 'newsletterPopup.successDesc', 'Thank you for subscribing. Check your inbox for the welcome edition and your free complex guide.')}
+                  onChange={(e) => updateField('newsletterPopup.successDesc', e.target.value)}
+                />
+              </div>
+            </div>
+
+            {/* 5. SHARED GUARANTEE & TRUST BADGES */}
+            <div style={{ background: '#1e2330', borderRadius: '6px', padding: '12px', border: '1px solid #2e384d' }}>
+              <strong style={{ fontSize: '13px', color: '#f3f4f6', display: 'block', marginBottom: '10px' }}>
+                5. Guarantee &amp; Security Badges
+              </strong>
+
+              <div className="panel-field">
+                <label>Guarantee Box Title</label>
+                <input
+                  type="text"
+                  className="panel-input"
+                  value={getNestedValue(activeContent, 'popups.guarantee.title', 'Personal Guarantee from Abhi Singh')}
+                  onChange={(e) => updateField('popups.guarantee.title', e.target.value)}
+                />
+              </div>
+
+              <div className="panel-field">
+                <label>Guarantee Box Description</label>
+                <input
+                  type="text"
+                  className="panel-input"
+                  value={getNestedValue(activeContent, 'popups.guarantee.desc', 'Direct email delivery. No fluff, no spam, actionable guidance.')}
+                  onChange={(e) => updateField('popups.guarantee.desc', e.target.value)}
+                />
+              </div>
+
+              <div className="panel-field">
+                <label>Security &amp; Trust Badge</label>
+                <input
+                  type="text"
+                  className="panel-input"
+                  value={getNestedValue(activeContent, 'popups.trustBadge', '🔒 256-bit Secure Encryption · Direct Email Delivery')}
+                  onChange={(e) => updateField('popups.trustBadge', e.target.value)}
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* TAB 3: GLOBAL THEME & COLOR SYSTEM */}
         {activePanelTab === 'global' && (
           <div className="panel-section">
             <div className="panel-section-title">Website Global Color System</div>

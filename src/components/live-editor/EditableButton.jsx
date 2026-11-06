@@ -39,7 +39,8 @@ export default function EditableButton({
     ? customStyles.text
     : (buttonKey ? getNestedValue(activeContent, buttonKey, defaultText) : defaultText);
 
-  const displayText = textValue || children || defaultText;
+  const isChildrenString = typeof children === 'string' || typeof children === 'number';
+  const displayText = textValue !== undefined ? textValue : (isChildrenString ? String(children) : defaultText);
   const href = customStyles.href || defaultHref;
   const target = customStyles.target || defaultTarget;
 
@@ -71,9 +72,14 @@ export default function EditableButton({
     }
   }, [displayText, isAdmin, isEditing]);
 
+  // If button visibility is set to false in custom styles, hide from visitors
+  if (customStyles.visible === false && (!isAdmin || !isEditing)) {
+    return null;
+  }
+
   // Visitor or preview mode without editing: render regular link or button
   if (!isAdmin || !isEditing) {
-    if (href && href !== '#' && !type.includes('submit')) {
+    if (href && href !== '#' && !type.includes('submit') && !onClick) {
       return (
         <a
           href={href}
@@ -85,6 +91,7 @@ export default function EditableButton({
           {...restProps}
         >
           {displayText}
+          {!isChildrenString && children}
         </a>
       );
     }
@@ -98,13 +105,14 @@ export default function EditableButton({
         {...restProps}
       >
         {displayText}
+        {!isChildrenString && children}
       </button>
     );
   }
 
   // Admin in edit mode: enable direct click-to-edit and inspector selection
   const handleEditClick = (e) => {
-    e.preventDefault(); // prevent navigation while editing
+    e.preventDefault(); // prevent navigation or submission while editing
     e.stopPropagation();
 
     selectElement({
@@ -116,6 +124,9 @@ export default function EditableButton({
         text: displayText,
         href,
         target,
+        type,
+        actionType: customStyles.actionType || (type === 'submit' ? 'submit' : href && href !== '#' ? 'link' : 'custom'),
+        visible: customStyles.visible !== false,
         ...customStyles,
       },
     });
@@ -123,8 +134,6 @@ export default function EditableButton({
     // Also trigger side inspector
     setIsPanelOpen(true);
     setActivePanelTab('element');
-
-    if (onClick) onClick(e);
   };
 
   const handleSpanFocus = (e) => {
@@ -173,12 +182,14 @@ export default function EditableButton({
     <button
       ref={buttonRef}
       type="button"
+      data-button-type={type}
       data-button-key={buttonKey}
       className={editClasses}
       style={{
         ...mergedStyle,
         position: 'relative',
         cursor: 'pointer',
+        ...(customStyles.visible === false ? { opacity: 0.45, borderStyle: 'dashed' } : {}),
       }}
       onClick={handleEditClick}
       title="Click to edit button text, link destination, colors, and styling"
@@ -194,6 +205,12 @@ export default function EditableButton({
         onKeyDown={handleKeyDown}
         style={{ outline: 'none', display: 'inline-block' }}
       />
+      {!isChildrenString && children}
+      {customStyles.visible === false && (
+        <span style={{ fontSize: '10px', color: '#EF4444', marginLeft: '6px', fontWeight: 700 }}>
+          [Hidden]
+        </span>
+      )}
       {isSelected && (
         <span className="element-edit-badge" title="Editing Button">
           Button ⚙

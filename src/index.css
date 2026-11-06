@@ -357,59 +357,81 @@ button, input, textarea, select, label {
 
 /* ── BOOK SECTION (HOMEPAGE HERO) ────────────────────────────── */
 #book.scroll-reveal {
-  padding-top: clamp(48px, 4.8vw, 60px);
-  padding-bottom: clamp(40px, 4vw, 52px);
+  padding-top: clamp(64px, 6vw, 88px);
+  padding-bottom: clamp(48px, 4.5vw, 64px);
+}
+
+@media (max-width: 960px) {
+  #book.scroll-reveal {
+    padding-top: clamp(48px, 5vw, 64px);
+    padding-bottom: 40px;
+  }
 }
 
 @media (max-width: 768px) {
   #book.scroll-reveal {
-    padding-top: 28px;
-    padding-bottom: 28px;
+    padding-top: 36px;
+    padding-bottom: 32px;
   }
 }
 
 .book-section {
   display: grid;
-  grid-template-columns: 290px minmax(460px, 1fr);
-  gap: 3.5rem;
-  align-items: start;
+  grid-template-columns: minmax(310px, 340px) 1fr;
+  gap: clamp(2.5rem, 4vw, 4rem);
+  align-items: center; /* Vertically center the book cover relative to right-side content */
+  width: 100%;
 }
 
-@media (max-width: 960px) {
-  .book-section {
-    grid-template-columns: 1fr;
-    gap: 2.25rem;
-  }
+.book-col {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
 }
 
 /* ── BOOK COVER ── */
 .book-cover-wrap {
   position: relative;
   width: 100%;
-  max-width: 290px;
+  max-width: 330px;
   perspective: 1200px;
+  margin: 0;
 }
 
 .book-cover {
   width: 100%;
-  aspect-ratio: 3/4;
-  background: var(--orange);
+  aspect-ratio: 3/4.15;
+  background: var(--orange, #FF6200);
   border-radius: 3px 6px 6px 3px;
   position: relative;
-  overflow: hidden;
-  box-shadow: 8px 8px 0 #212121, -3px 0 0 #b84500, 0 20px 32px -8px rgba(0, 0, 0, 0.22);
-  display: grid;
-  grid-template-rows: 1fr 1fr;
-  padding: 1.35rem 1.3rem 1.3rem 1.6rem;
+  overflow: visible; /* Never crop 3D dimensional appearance or shadows */
+  box-shadow: 8px 8px 0 #212121, -4px 0 0 #b84500, 0 20px 32px -8px rgba(0, 0, 0, 0.22);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 1.5rem 1.35rem 1.35rem 1.65rem;
   user-select: none;
-  gap: 0;
   transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
               box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+.book-cover::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 12px;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.28) 0%, rgba(255, 255, 255, 0.05) 40%, rgba(0, 0, 0, 0.16) 100%);
+  border-radius: 3px 0 0 3px;
+  pointer-events: none;
+  z-index: 3;
+}
+
 .book-cover:hover {
   transform: translateY(-6px) rotate(-1deg) scale(1.015);
-  box-shadow: 10px 10px 0 #212121, -4px 0 0 #b84500, 0 24px 38px -10px rgba(0, 0, 0, 0.26);
+  box-shadow: 11px 12px 0 #212121, -5px 0 0 #b84500, 0 24px 38px -10px rgba(0, 0, 0, 0.28);
 }
 
 .cover-top {
@@ -421,10 +443,10 @@ button, input, textarea, select, label {
   position: relative;
   z-index: 1;
   display: flex;
+  flex-direction: column;
   align-items: flex-start;
-  align-self: start;
-  margin-top: -30%;
-  padding-top: 0.5rem;
+  align-self: flex-start;
+  padding-top: 0.2rem;
 }
 
 .cover-elrx-label {
@@ -440,8 +462,8 @@ button, input, textarea, select, label {
 .cover-title {
   font-family: var(--font-display);
   font-weight: 700;
-  font-size: 2.9rem;
-  line-height: 0.88;
+  font-size: clamp(2.6rem, 2.95rem, 3.2rem);
+  line-height: 0.9;
   color: var(--white);
   letter-spacing: -0.02em;
 }
@@ -456,7 +478,7 @@ button, input, textarea, select, label {
   z-index: 1;
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: 0.45rem;
   justify-content: flex-end;
   padding-top: 0.25rem;
 }
@@ -469,24 +491,25 @@ button, input, textarea, select, label {
   text-transform: uppercase;
   color: var(--white);
   line-height: 1.45;
-  margin-bottom: 0.4rem;
+  margin-bottom: 0.2rem;
 }
 
 .cover-author-row {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.55rem;
   margin-top: 0.2rem;
 }
 
 .cover-author-photo {
-  width: 40px;
-  height: 40px;
+  width: 42px;
+  height: 42px;
   border-radius: 3px;
   object-fit: cover;
   object-position: center 10%;
   flex-shrink: 0;
   display: block;
+  border: 1px solid rgba(0, 0, 0, 0.15);
 }
 
 .cover-author-text {
@@ -504,7 +527,7 @@ button, input, textarea, select, label {
 .cover-author-name {
   font-family: var(--font-display);
   font-weight: 700;
-  font-size: 0.85rem;
+  font-size: 0.88rem;
   color: var(--black);
 }
 
@@ -517,27 +540,46 @@ button, input, textarea, select, label {
   border-radius: 2px;
 }
 
-.book-content h1,
 .book-content h2,
-.hero-book-title,
-.hero-headline {
+.hero-book-title {
   font-family: var(--font-heading);
   font-weight: 700;
   font-size: clamp(2.25rem, 1.7rem + 1.6vw, 2.85rem);
   margin-top: 0;
-  margin-bottom: 1.15rem;
-  line-height: 1.10;
+  margin-bottom: 1.25rem;
+  line-height: 1.12;
   letter-spacing: -0.025em;
   color: var(--text-color);
   text-decoration: none;
 }
 
+.book-content h1.hero-headline,
+.hero-headline {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: clamp(2.25rem, 1.7rem + 1.6vw, 2.85rem);
+  margin-top: 0;
+  margin-bottom: 1.25rem;
+  line-height: 1.15;
+  letter-spacing: -0.025em;
+  color: var(--text-color);
+  white-space: pre-line;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  text-decoration: underline;
+  text-decoration-color: var(--yellow);
+  text-decoration-thickness: 4px;
+  text-underline-offset: 6px;
+  text-decoration-skip-ink: none;
+}
+
 .hero-line,
 .hero-highlight {
-  display: block;
+  display: table;
+  width: fit-content;
   white-space: nowrap;
-  line-height: 1.10;
-  margin: 0;
+  line-height: 1.14;
+  margin: 0 0 0.18rem 0;
   padding: 0;
   text-decoration: underline;
   text-decoration-color: var(--yellow);
@@ -546,11 +588,14 @@ button, input, textarea, select, label {
   text-decoration-skip-ink: none;
 }
 
-@media (max-width: 480px) {
+@media (max-width: 600px) {
   .hero-line,
   .hero-highlight {
+    display: table;
+    width: fit-content;
+    max-width: 100%;
     white-space: normal;
-    display: block;
+    margin-bottom: 0.25rem;
   }
 }
 
@@ -563,7 +608,7 @@ button, input, textarea, select, label {
 }
 
 .book-cta-row {
-  margin-top: 2.33rem;
+  margin-top: 2rem;
 }
 
 /* ── SIGNUP ROW ── */
@@ -576,29 +621,30 @@ button, input, textarea, select, label {
   overflow: hidden;
   background: var(--white);
   align-items: stretch;
-  height: 48px;
-  min-height: 48px;
+  height: 50px;
+  min-height: 50px;
+  box-sizing: border-box;
 }
 
 .signup-row input {
   flex: 1 1 auto;
   border: none;
   outline: none;
-  padding: 0 1rem;
+  padding: 0 1.15rem;
   font-family: var(--font-body);
   font-size: 0.95rem;
-  line-height: 48px;
+  line-height: normal;
   color: var(--text-color);
   background: var(--white);
-  min-width: 220px;
+  min-width: 0;
   height: 100%;
   box-sizing: border-box;
+  margin: 0;
 }
 
 .signup-row input::placeholder {
   color: rgba(33, 33, 33, 0.6);
   opacity: 1;
-  line-height: 48px;
 }
 
 .signup-row button {
@@ -607,9 +653,9 @@ button, input, textarea, select, label {
   color: var(--white);
   border: none;
   border-left: 1px solid #212121;
-  padding: 0 1.25rem;
+  padding: 0 1.35rem;
   font-family: var(--font-body);
-  font-size: 0.95rem;
+  font-size: 0.92rem;
   font-weight: 700;
   cursor: pointer;
   white-space: nowrap;
@@ -617,7 +663,9 @@ button, input, textarea, select, label {
   align-items: center;
   justify-content: center;
   height: 100%;
-  transition: background 0.2s ease, transform 0.15s ease;
+  margin: 0;
+  box-sizing: border-box;
+  transition: background 0.15s ease, transform 0.1s ease;
 }
 
 .signup-row button:hover {
@@ -1368,69 +1416,86 @@ h3,
   transform: scale(1.15);
 }
 
-/* ── FOOTER SIGNUP SECTION ───────────────────────────────────── */
+/* ── FOOTER SIGNUP SECTION (HOMEPAGE SECTION 6) ─────────────────── */
 .footer-signup {
   background: var(--white);
   border-top: 1px solid #212121;
-  padding: 4rem 0;
+  padding: clamp(3.75rem, 5vw, 5rem) 0;
 }
 
 .footer-signup .page-wrap {
   display: grid;
-  grid-template-columns: 1.1fr 1fr;
-  gap: 4rem;
+  grid-template-columns: 1.18fr 0.95fr;
+  gap: clamp(2.5rem, 4vw, 4.5rem);
   align-items: center;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 960px) {
   .footer-signup .page-wrap {
     grid-template-columns: 1fr;
-    gap: 2rem;
+    gap: 2.25rem;
   }
 }
 
-.footer-signup-text h2 {
+.footer-signup-free {
+  display: block;
   font-family: var(--font-heading);
-  font-size: var(--text-h2);
-  line-height: var(--line-height-heading);
-  letter-spacing: var(--letter-spacing-h2);
-  color: var(--text-color);
-  margin-bottom: 0.85rem;
-}
-
-.footer-signup-text h2 em {
   font-style: italic;
+  font-weight: 400;
+  font-size: clamp(1.85rem, 1.4rem + 1.2vw, 2.35rem);
+  line-height: 1.15;
   color: var(--orange);
+  margin-bottom: 0.35rem;
 }
 
-.footer-signup-text h2 span,
+.footer-signup-text h2,
+.footer-signup-heading {
+  font-family: var(--font-heading);
+  font-size: clamp(2rem, 1.55rem + 1.35vw, 2.65rem);
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.025em;
+  color: var(--text-color);
+  margin-top: 0;
+  margin-bottom: 1.15rem;
+  display: block;
+}
+
 .footer-newsletter-underline {
+  font-weight: 700;
+  color: var(--black);
   text-decoration: underline;
   text-decoration-color: var(--yellow);
   text-decoration-thickness: 4px;
   text-underline-offset: 6px;
   text-decoration-skip-ink: none;
+  display: inline;
+  font-family: var(--font-heading);
 }
 
 .footer-signup-text .sub {
   font-family: var(--font-body);
-  font-size: var(--text-body);
+  font-size: 0.95rem;
   color: var(--text-color);
-  line-height: var(--line-height-body);
-  max-width: var(--measure-prose);
+  line-height: 1.6;
+  max-width: 440px;
+  margin: 0;
 }
 
 .footer-signup-cta {
   display: flex;
   flex-direction: column;
-  gap: 1.2rem;
+  gap: 0.55rem;
+  width: 100%;
 }
 
 .hero-tagline {
-  font-size: var(--text-body);
-  line-height: var(--line-height-body);
-  color: var(--black);
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  line-height: 1.4;
+  color: var(--text-color);
   font-weight: 600;
+  margin: 0;
 }
 
 /* ── FOOTER ──────────────────────────────────────────────────── */
@@ -3376,8 +3441,12 @@ html, body {
   }
 
   .book-section {
-    grid-template-columns: 290px 1fr;
-    gap: 2.75rem;
+    grid-template-columns: minmax(290px, 310px) 1fr;
+    gap: 2.5rem;
+  }
+
+  .book-cover-wrap {
+    max-width: 310px;
   }
 
   .about-section {
@@ -3416,8 +3485,12 @@ html, body {
   }
 
   .book-section {
-    grid-template-columns: 280px 1fr;
+    grid-template-columns: minmax(270px, 290px) 1fr;
     gap: 2rem;
+  }
+
+  .book-cover-wrap {
+    max-width: 290px;
   }
 
   .hero-book-title,
@@ -3622,13 +3695,20 @@ html, body {
   /* Hero Section Stacking */
   .book-section {
     grid-template-columns: 1fr;
-    gap: 2.25rem;
+    gap: 2rem;
     text-align: left;
   }
 
+  .book-col {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    margin-bottom: 0.5rem;
+  }
+
   .book-cover-wrap {
-    width: 240px;
-    max-width: 80%;
+    width: 100%;
+    max-width: 280px;
     margin: 0 auto;
   }
 
@@ -3690,8 +3770,15 @@ html, body {
     gap: 2rem;
   }
 
-  .footer-signup-text h2 {
-    font-size: clamp(1.5rem, 5.5vw, 1.95rem);
+  .footer-signup-free {
+    font-size: clamp(1.4rem, 5vw, 1.75rem);
+    margin-bottom: 0.25rem;
+  }
+
+  .footer-signup-text h2,
+  .footer-signup-heading {
+    font-size: clamp(1.6rem, 5.5vw, 2.05rem);
+    margin-bottom: 0.85rem;
   }
 
   /* Work With Me Form Stacking */

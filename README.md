@@ -1,15 +1,15 @@
 # Abhi Singh Website (abhisingh.me)
 
-Official personal brand and digital product store website for **Abhi Singh (Abhimanyu VS)** — fitness and lifestyle coach, ACE Certified Personal Trainer (CPT).
+Official personal brand and digital product store website for **Abhi Singh (Abhimanyu VS)** - fitness and lifestyle coach, ACE Certified Personal Trainer (CPT).
 
 ---
 
 ## 1. Project Overview & Architecture
 
 This project is built with **React** and **Vite**, adhering strictly to:
-1. `BRAND_GUIDELINES.md` — 4 colors only (Orange, Yellow, White, Black; zero grey), 2 fonts only (Lora & Arial), yellow underlines on section titles, orange underlined links, yellow buttons for free items, orange buttons for paid items.
-2. `CLIENT_REQUIREMENTS.md` — Strict 3 main pages (Home, E.L.R.x Store, Work With Me) plus Newsletter Archive, product-first hero, certificate hover popup, exit-intent newsletter popup, Zoho Campaigns source/UTM tracking, and Razorpay/PayPal ready checkout.
-3. `DESIGN_INSTRUCTIONS.md` — Global center-aligned layout, generous white space (96–140px), responsive breakpoints (Mobile, Tablet, Desktop, TV).
+1. `BRAND_GUIDELINES.md` - 4 colors only (Orange, Yellow, White, Black; zero grey), 2 fonts only (Lora & Arial), yellow underlines on section titles, orange underlined links, yellow buttons for free items, orange buttons for paid items.
+2. `CLIENT_REQUIREMENTS.md` - Strict 3 main pages (Home, E.L.R.x Store, Work With Me) plus Newsletter Archive, product-first hero, certificate hover popup, exit-intent newsletter popup, Zoho Campaigns source/UTM tracking, and Razorpay/PayPal ready checkout.
+3. `DESIGN_INSTRUCTIONS.md` - Global center-aligned layout, generous white space (96–140px), responsive breakpoints (Mobile, Tablet, Desktop, TV).
 
 ---
 

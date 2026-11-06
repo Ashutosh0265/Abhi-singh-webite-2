@@ -49,7 +49,17 @@ export default function EditableSection({
 
   const isSelected = isEditing && selectedElement?.key === sectionKey;
 
+  const shortKey = sectionKey ? sectionKey.replace('home.', '') : '';
+  const isSectionHidden =
+    customStyles?.visible === false ||
+    customStyles?.display === 'none' ||
+    activeContent?.[shortKey]?.visible === false ||
+    activeContent?.[sectionKey]?.visible === false;
+
   if (!isAdmin || !isEditing) {
+    if (isSectionHidden) {
+      return null;
+    }
     const nonEditClasses = `${className} is-revealed`.trim();
     return (
       <section id={id} className={nonEditClasses} style={mergedStyle} {...restProps}>
@@ -107,6 +117,24 @@ export default function EditableSection({
       >
         <span>📐 {sectionLabel}</span>
       </div>
+      {isSectionHidden && (
+        <div style={{
+          background: '#FFFBEB',
+          border: '1px dashed #D97706',
+          borderRadius: '4px',
+          padding: '0.45rem 0.85rem',
+          margin: '0.5rem 1rem 1rem',
+          color: '#92400E',
+          fontSize: '0.82rem',
+          fontWeight: 600,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.5rem',
+        }}>
+          <span>⚠️</span>
+          <span>This section is hidden on the public website (visible in Admin Editor mode only).</span>
+        </div>
+      )}
       {children}
     </section>
   );

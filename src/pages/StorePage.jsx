@@ -3,7 +3,7 @@ import { getProducts, getSiteContent, DEFAULT_SITE_CONTENT } from '../services/d
 import { products as fallbackProducts } from '../data/products';
 import useScrollReveal from '../hooks/useScrollReveal';
 import ProductBookCover from '../components/ProductBookCover';
-import { EditableText, EditableSection } from '../components/live-editor';
+import { EditableText, EditableSection, EditableButton } from '../components/live-editor';
 
 function formatProductForStore(p) {
   const isFree = Boolean(p.is_free || p.type === 'free' || p.price_inr === 0 || p.priceAmount === 0 || p.price === 'Free');
@@ -240,17 +240,16 @@ export default function StorePage({ onOpenProduct }) {
                       {prod.tagline || prod.short_description || (prod.description ? (prod.description.length > 85 ? prod.description.slice(0, 85) + '…' : prod.description) : '')}
                     </p>
                     <div className="card-footer">
-                      <button
-                        type="button"
+                      <EditableButton
+                        buttonKey={`store.product.${prod.id}.cta`}
+                        defaultText={prod.ctaText || (isFree ? 'Get for Free' : `Get for ₹${prod.price || 499}`)}
                         className={`btn-card ${isFree ? 'btn-free' : 'btn-paid'}`}
                         style={prod.stock_status === 'out_of_stock' ? { opacity: 0.65, cursor: 'not-allowed', background: '#9CA3AF', color: '#FFFFFF', borderColor: '#6B7280' } : {}}
                         onClick={(e) => {
                           e.stopPropagation();
                           handleProductClick(prod);
                         }}
-                      >
-                        {prod.ctaText}
-                      </button>
+                      />
                     </div>
                   </div>
                 </div>
@@ -318,16 +317,15 @@ export default function StorePage({ onOpenProduct }) {
                     {prod.tagline || prod.short_description || (prod.description ? (prod.description.length > 85 ? prod.description.slice(0, 85) + '…' : prod.description) : '')}
                   </p>
                   <div className="card-footer">
-                    <button
-                      type="button"
+                    <EditableButton
+                      buttonKey={`store.product.${prod.id}.cta`}
+                      defaultText={prod.ctaText || 'Join the Waitlist'}
                       className="btn-card btn-waitlist"
                       onClick={(e) => {
                         e.stopPropagation();
                         handleProductClick(prod);
                       }}
-                    >
-                      Join the Waitlist
-                    </button>
+                    />
                   </div>
                 </div>
               </div>
