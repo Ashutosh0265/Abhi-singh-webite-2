@@ -8,3 +8,10 @@ ELRx*.html
 clean_store_source.html
 
 .vercel
+
+# Local secrets
+.env
+.env.local
+
+# Runtime order data, written by api/_lib/orders.js
+public/assets/downloads/.orders_cache.json
